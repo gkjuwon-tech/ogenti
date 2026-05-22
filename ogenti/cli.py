@@ -15,10 +15,22 @@ log = get_logger("ogenti.cli")
 
 @app.command()
 def retrofit(
-    wan22_weights: Path = typer.Argument(..., help="Path to Wan2.2-TI2V-5B weights dir or .safetensors."),
-    model_config: Path = typer.Option("ogenti/configs/model/ogenti_5b.yaml", "--config"),
-    output_dir: Path = typer.Option("checkpoints/ogenti_5b_retrofit_init", "--out"),
+    wan22_weights: Path = typer.Argument(
+        ...,
+        help=(
+            "Path to a Wan2.2 weights directory (or .safetensors). "
+            "For A14B MoE snapshots, point at the root containing "
+            "high_noise_model/ and low_noise_model/ subdirs."
+        ),
+    ),
+    model_config: Path = typer.Option("ogenti/configs/model/ogenti_a14b.yaml", "--config"),
+    output_dir: Path = typer.Option("checkpoints/ogenti_a14b_retrofit_init", "--out"),
     verify: bool = typer.Option(True, "--verify/--no-verify"),
+    expert: Optional[str] = typer.Option(
+        None, "--expert",
+        help="Wan2.2-A14B MoE expert to import: low_noise (default) | high_noise. "
+             "Ignored for single-expert checkpoints (TI2V-5B).",
+    ),
 ) -> None:
     """Import a pretrained Wan2.2 transformer into an OgentiTransformer."""
     from omegaconf import OmegaConf
@@ -36,7 +48,11 @@ def retrofit(
     cfg = OmegaConf.to_object(merged)
 
     model, report = retrofit_from_backbone(
-        BackboneFamily.WAN22, wan22_weights, cfg, verify_invariant=verify
+        BackboneFamily.WAN22,
+        wan22_weights,
+        cfg,
+        expert=expert,
+        verify_invariant=verify,
     )
     log.info(f"retrofit done: copied={len(report['copied'])} keys")
 
@@ -52,7 +68,7 @@ def retrofit(
 @app.command()
 def train(
     train_config: Path = typer.Argument(..., help="Path to training config YAML."),
-    model_config: Path = typer.Option("ogenti/configs/model/ogenti_5b.yaml", "--model-config"),
+    model_config: Path = typer.Option("ogenti/configs/model/ogenti_a14b.yaml", "--model-config"),
     init_ckpt: Optional[Path] = typer.Option(None, "--init-from"),
 ) -> None:
     """Run a training stage."""

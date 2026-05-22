@@ -1,9 +1,15 @@
-"""Standalone script: import Wan2.2 weights into an Ogenti checkpoint."""
+"""Standalone script: import Wan2.2 weights into an Ogenti checkpoint.
+
+Defaults target the Wan2.2-T2V-A14B MoE backbone (RFC-0006). To retrofit from
+the legacy 5B path instead, pass
+``--model-config ogenti/configs/model/ogenti_5b.yaml``.
+"""
 
 from __future__ import annotations
 
 from dataclasses import asdict
 from pathlib import Path
+from typing import Optional
 
 import typer
 from omegaconf import OmegaConf
@@ -19,10 +25,21 @@ log = get_logger("ogenti.scripts.retrofit")
 
 @app.command()
 def main(
-    wan22_weights: Path = typer.Argument(...),
-    model_config: Path = typer.Option("ogenti/configs/model/ogenti_5b.yaml"),
-    output_dir: Path = typer.Option("checkpoints/ogenti_5b_retrofit_init"),
+    wan22_weights: Path = typer.Argument(
+        ...,
+        help=(
+            "Path to a Wan2.2 weights snapshot. For A14B point at the root "
+            "containing high_noise_model/ + low_noise_model/."
+        ),
+    ),
+    model_config: Path = typer.Option("ogenti/configs/model/ogenti_a14b.yaml"),
+    output_dir: Path = typer.Option("checkpoints/ogenti_a14b_retrofit_init"),
     no_verify: bool = typer.Option(False),
+    expert: Optional[str] = typer.Option(
+        None,
+        "--expert",
+        help="Wan2.2-A14B MoE expert: low_noise (default) | high_noise.",
+    ),
 ) -> None:
     configure_root_logging()
     raw = OmegaConf.load(str(model_config))
@@ -31,7 +48,7 @@ def main(
     cfg = OgentiTransformerConfig(**raw_dict)
 
     model, report = import_wan22_into_ogenti(
-        wan22_weights, cfg, verify_invariant=not no_verify
+        wan22_weights, cfg, verify_invariant=not no_verify, expert=expert
     )
     save_checkpoint(
         output_dir,

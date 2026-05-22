@@ -2,11 +2,22 @@
 
 Strategy:
   1. Define multiple candidate keymap variants (upstream Wan releases use
-     slightly different naming — diffusers fork vs. official repo).
+     slightly different naming — diffusers fork vs. official repo) including
+     the dual-expert A14B MoE layout (high_noise_model/ + low_noise_model/).
   2. At import time, sniff the source state dict to detect which variant
      we're looking at and apply the matching map.
   3. Report unmapped/shape-mismatched keys so the user can diagnose
      before training spends compute.
+
+Supported upstream layouts:
+  - Wan2.2-TI2V-5B          (legacy single-expert, kept as fallback)
+  - Wan2.2-T2V-A14B         (primary — MoE dual expert)
+  - Wan2.2-I2V-A14B         (primary — MoE dual expert, with image cond)
+  - diffusers WanTransformer3DModel state dicts
+
+For A14B sources, pick ONE expert per OgentiTransformer instance via the
+`expert` argument. The dual-expert inference wrapper
+(`ogenti.inference.moe_wrapper`) loads both and routes by timestep.
 """
 
 from __future__ import annotations
@@ -14,7 +25,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Literal, Optional
 
 import torch
 from safetensors.torch import load_file
@@ -23,6 +34,8 @@ from ogenti.models.ogenti_transformer import OgentiTransformer, OgentiTransforme
 from ogenti.utils.logging import get_logger
 
 log = get_logger("ogenti.retrofit.wan22")
+
+ExpertSelector = Literal["low_noise", "high_noise"]
 
 
 # Variant A: official Wan2.2 repo naming
@@ -138,6 +151,61 @@ WAN22_KEYMAP_TI2V_TOP: dict[str, str] = {
     "head.head.bias": "unpatchify.proj.bias",
 }
 
+# Variant D: Wan2.2-{T2V,I2V}-A14B per-expert state dict.
+# Each expert (high_noise_model / low_noise_model) ships as its own shard set
+# with the same intra-block naming as the official 5B repo, but the top-level
+# layout matches official (no extra text_proj.2.*, no time_projection.*).
+WAN22_KEYMAP_A14B_BLOCK: dict[str, str] = {
+    "self_attn.q.weight": "self_attn.q_proj.weight",
+    "self_attn.q.bias": "self_attn.q_proj.bias",
+    "self_attn.k.weight": "self_attn.k_proj.weight",
+    "self_attn.k.bias": "self_attn.k_proj.bias",
+    "self_attn.v.weight": "self_attn.v_proj.weight",
+    "self_attn.v.bias": "self_attn.v_proj.bias",
+    "self_attn.o.weight": "self_attn.out_proj.weight",
+    "self_attn.o.bias": "self_attn.out_proj.bias",
+    "self_attn.norm_q.weight": "self_attn.q_norm.weight",
+    "self_attn.norm_k.weight": "self_attn.k_norm.weight",
+    "cross_attn.q.weight": "cross_attn.q_proj.weight",
+    "cross_attn.q.bias": "cross_attn.q_proj.bias",
+    "cross_attn.k.weight": "cross_attn.k_proj.weight",
+    "cross_attn.k.bias": "cross_attn.k_proj.bias",
+    "cross_attn.v.weight": "cross_attn.v_proj.weight",
+    "cross_attn.v.bias": "cross_attn.v_proj.bias",
+    "cross_attn.o.weight": "cross_attn.out_proj.weight",
+    "cross_attn.o.bias": "cross_attn.out_proj.bias",
+    "cross_attn.norm_q.weight": "cross_attn.q_norm.weight",
+    "cross_attn.norm_k.weight": "cross_attn.k_norm.weight",
+    "ffn.0.weight": "ffn.w1.weight",
+    "ffn.0.bias": "ffn.w1.bias",
+    "ffn.2.weight": "ffn.w2.weight",
+    "ffn.2.bias": "ffn.w2.bias",
+    "ffn.gate.weight": "ffn.w3.weight",
+    "modulation": "adaln.linear.weight",
+    "norm3.weight": "norm3.weight",
+    "norm3.bias": "norm3.bias",
+}
+
+WAN22_KEYMAP_A14B_TOP: dict[str, str] = {
+    "patch_embedding.weight": "patch_embed.proj.weight",
+    "patch_embedding.bias": "patch_embed.proj.bias",
+    "text_embedding.0.weight": "text_proj.weight",
+    "text_embedding.0.bias": "text_proj.bias",
+    "time_embedding.0.weight": "timestep_head.mlp.0.weight",
+    "time_embedding.0.bias": "timestep_head.mlp.0.bias",
+    "time_embedding.2.weight": "timestep_head.mlp.2.weight",
+    "time_embedding.2.bias": "timestep_head.mlp.2.bias",
+    "head.modulation": "adaln_out.weight",
+    "head.head.weight": "unpatchify.proj.weight",
+    "head.head.bias": "unpatchify.proj.bias",
+}
+
+# A14B MoE subdirs inside a model snapshot directory.
+A14B_EXPERT_SUBDIRS: dict[str, tuple[str, ...]] = {
+    "high_noise": ("high_noise_model", "high_noise", "transformer_high_noise"),
+    "low_noise": ("low_noise_model", "low_noise", "transformer_low_noise"),
+}
+
 
 @dataclass
 class KeymapVariant:
@@ -177,8 +245,23 @@ class KeymapVariant:
             block_regex=re.compile(r"^blocks\.(\d+)\.(.+)$"),
         )
 
+    @classmethod
+    def a14b(cls) -> "KeymapVariant":
+        return cls(
+            name="a14b",
+            block_prefix="blocks.",
+            block_map=WAN22_KEYMAP_A14B_BLOCK,
+            top_map=WAN22_KEYMAP_A14B_TOP,
+            block_regex=re.compile(r"^blocks\.(\d+)\.(.+)$"),
+        )
 
-VARIANTS = [KeymapVariant.official(), KeymapVariant.diffusers(), KeymapVariant.ti2v()]
+
+VARIANTS = [
+    KeymapVariant.official(),
+    KeymapVariant.diffusers(),
+    KeymapVariant.ti2v(),
+    KeymapVariant.a14b(),
+]
 
 
 def detect_variant(state_keys: list[str]) -> KeymapVariant:
@@ -193,9 +276,51 @@ def detect_variant(state_keys: list[str]) -> KeymapVariant:
     return best
 
 
-def _load_state(path: Path | str) -> dict[str, torch.Tensor]:
+def _resolve_expert_dir(root: Path, expert: Optional[ExpertSelector]) -> Path:
+    """For A14B snapshots, descend into the requested MoE expert subdir.
+
+    Returns `root` unchanged if no expert subdirs are found (single-expert models
+    like TI2V-5B). Otherwise returns the chosen expert directory.
+    """
+    if not root.is_dir():
+        return root
+
+    present = {
+        name: next((root / cand for cand in cands if (root / cand).is_dir()), None)
+        for name, cands in A14B_EXPERT_SUBDIRS.items()
+    }
+    present = {k: v for k, v in present.items() if v is not None}
+    if not present:
+        return root
+
+    if expert is None:
+        # default to low_noise (fine-detail expert) when both are present
+        chosen = present.get("low_noise") or present.get("high_noise")
+        log.info(
+            f"A14B MoE layout detected at {root}; no expert specified, "
+            f"defaulting to 'low_noise' -> {chosen}"
+        )
+        assert chosen is not None
+        return chosen
+
+    if expert not in present:
+        raise FileNotFoundError(
+            f"requested expert '{expert}' not found under {root} "
+            f"(available: {sorted(present)})"
+        )
+    log.info(f"A14B MoE: selected expert '{expert}' from {present[expert]}")
+    return present[expert]
+
+
+def _load_state(
+    path: Path | str,
+    *,
+    expert: Optional[ExpertSelector] = None,
+) -> dict[str, torch.Tensor]:
     path = Path(path)
     if path.is_dir():
+        path = _resolve_expert_dir(path, expert)
+
         candidates = sorted(path.glob("*.safetensors"))
         if not candidates:
             for sub in ("transformer", "dit"):
@@ -240,9 +365,10 @@ def import_wan22_into_ogenti(
     strict: bool = False,
     verify_invariant: bool = True,
     force_variant: Optional[str] = None,
+    expert: Optional[ExpertSelector] = None,
 ) -> tuple[OgentiTransformer, dict[str, list[str]]]:
     log.info("=== Wan2.2 -> Ogenti retrofit import ===")
-    src_state = _load_state(wan22_weights_path)
+    src_state = _load_state(wan22_weights_path, expert=expert)
     log.info(f"loaded {len(src_state)} source tensors")
 
     if force_variant:
@@ -259,6 +385,7 @@ def import_wan22_into_ogenti(
         "skipped_shape": [],
         "skipped_unknown": [],
         "variant": [variant.name],
+        "expert": [expert] if expert else [],
     }
 
     for src_k, src_v in src_state.items():
@@ -299,12 +426,13 @@ def validate_keymap_dry_run(
     ogenti_config: OgentiTransformerConfig,
     *,
     force_variant: Optional[str] = None,
+    expert: Optional[ExpertSelector] = None,
 ) -> dict[str, list[str]]:
     """Load weights and run the import, but do not instantiate full model state.
 
     Returns a coverage report so the operator can review before training.
     """
-    src_state = _load_state(wan22_weights_path)
+    src_state = _load_state(wan22_weights_path, expert=expert)
     variant = (
         next((v for v in VARIANTS if v.name == force_variant), None)
         if force_variant
@@ -318,6 +446,7 @@ def validate_keymap_dry_run(
 
     report = {
         "variant": [variant.name],
+        "expert": [expert] if expert else [],
         "mapped_ok": [],
         "shape_mismatch": [],
         "unmapped_source": [],

@@ -19,8 +19,12 @@ log = get_logger("ogenti.scripts.validate_keymap")
 @app.command()
 def main(
     wan22_weights: Path = typer.Argument(...),
-    model_config: Path = typer.Option("ogenti/configs/model/ogenti_5b.yaml"),
-    variant: str = typer.Option(None, help="Force variant: official|diffusers"),
+    model_config: Path = typer.Option("ogenti/configs/model/ogenti_a14b.yaml"),
+    variant: str = typer.Option(None, help="Force variant: official|diffusers|ti2v|a14b"),
+    expert: str = typer.Option(
+        None,
+        help="Wan2.2-A14B MoE expert: low_noise (default) | high_noise. Ignored for 5B.",
+    ),
     out_report: Path = typer.Option("outputs/logs/keymap_report.json"),
 ) -> None:
     configure_root_logging()
@@ -29,7 +33,9 @@ def main(
     raw_dict.pop("_target_", None)
     cfg = OgentiTransformerConfig(**raw_dict)
 
-    report = validate_keymap_dry_run(wan22_weights, cfg, force_variant=variant)
+    report = validate_keymap_dry_run(
+        wan22_weights, cfg, force_variant=variant, expert=expert,
+    )
 
     out_report.parent.mkdir(parents=True, exist_ok=True)
     out_report.write_text(json.dumps(report, indent=2))
