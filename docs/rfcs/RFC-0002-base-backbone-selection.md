@@ -1,6 +1,14 @@
 # RFC-0002 — Base Backbone Selection for Retrofit
 
-**Status:** Draft → seeking decision
+**Status:** Accepted, but **superseded in part by [RFC-0006](RFC-0006-promoting-a14b.md)**
+> RFC-0002 recommended Wan2.2-TI2V-5B as the primary target on a decision
+> matrix that weighted retrofit tractability and single-node compute fit
+> heavily. The 5B base proved unusable for ad creative in raw HF testing
+> (≤3s coherent clips, mangled form, broken prompt adherence). The
+> compute constraint also relaxed (A100 80GB available). RFC-0006 re-runs
+> the matrix with adjusted weights and promotes **Wan2.2-T2V-A14B** as the
+> primary target, with TI2V-5B kept as legacy fallback.
+
 **Date:** 2026-05-22
 **Depends on:** RFC-0001
 

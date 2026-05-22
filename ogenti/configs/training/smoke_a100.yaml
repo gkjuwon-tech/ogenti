@@ -1,0 +1,109 @@
+# Smoke test config — single A100 80GB.
+#
+# Replaces the legacy smoke_5090.yaml as the primary "before/after on one GPU"
+# entrypoint. Targets Wan2.2-T2V-A14B (one expert at a time) with the same
+# frozen-backbone + Ogenti-add-ons-only retrofit strategy.
+#
+# Strategy:
+#   - Wan2.2-A14B backbone (low_noise expert) is FROZEN. Only Ogenti add-on
+#     modules train.
+#   - bf16 mixed precision (A100 Ampere native).
+#   - batch=1 with gradient accumulation 8 (effective batch 8).
+#   - aggressive gradient checkpointing on every block.
+#   - resolution 480x832 (16:9, native Wan2.2 A14B aspect ratio).
+#   - 5-second clips at 24fps (≈ 81 latent frames after temporal compression).
+#   - Anatomy / OCR / Physics losses OFF for first smoke (turn on after invariant passes).
+#
+# Memory budget on A100 80GB:
+#   - A14B transformer fp16: ~28 GB (frozen, no optimizer state)
+#   - Ogenti add-on modules trainable: ~6 GB params + ~12 GB optimizer state
+#   - Activations w/ grad ckpt @ 480x832x81: ~18 GB
+#   -> total: ~64 GB, leaves headroom for the VAE encode pass.
+
+stage_name: smoke_a100
+seed: 42
+
+dataset:
+  _target_: ogenti.data.loaders.video_dataset.VideoDatasetConfig
+  manifest_path: data/manifests/ads_train.jsonl
+  root: data/
+  target_frames: 81
+  target_height: 480
+  target_width: 832
+  target_fps: 24
+  load_keypoints: false
+  load_glyph_regions: false
+  load_skin_masks: false
+  load_camera_motion: true
+  load_subject_motion: false
+  load_material_masks: false
+  load_object_trajectories: false
+  load_micro_events: false
+  load_physics_scenes: false
+  max_glyph_regions: 0
+  glyph_crop_size: 64
+
+dataloader:
+  batch_size: 1
+  num_workers: 4
+  pin_memory: true
+  prefetch_factor: 2
+  gradient_accumulation_steps: 8
+
+optim:
+  optimizer: adamw
+  lr: 1.0e-5
+  betas: [0.9, 0.95]
+  weight_decay: 0.01
+  grad_clip: 1.0
+
+scheduler:
+  type: cosine
+  warmup_steps: 100
+  total_steps: 3000
+  min_lr: 1.0e-7
+
+flow:
+  shift: 7.0
+  logit_mean: 0.0
+  logit_std: 1.0
+
+loss_weights:
+  diffusion: 1.0
+  identity: 0.05
+  anatomy: 0.0
+  ocr: 0.0
+  frequency_skin: 0.0
+  temporal_realism: 0.0
+  physics: 0.0
+  motion_realism: 0.0
+  physics_keyframe: 0.0
+
+retrofit:
+  freeze_backbone_weights: true
+  unfreeze_modules:
+    - "entity_bank"
+    - "blocks.*.entity_refine"
+    - "blocks.*.patch_from_entity"
+    - "camera_motion_embed"
+
+# Which Wan2.2-A14B expert to retrofit from (high_noise | low_noise).
+# low_noise is the fine-detail expert that handles the last ~50% of the
+# rectified-flow trajectory and dominates final visual quality.
+backbone:
+  family: wan22
+  model_id: Wan-AI/Wan2.2-T2V-A14B
+  expert: low_noise
+
+logging:
+  run_dir: outputs/runs/smoke_a100
+  wandb_project: ogenti-smoke
+  log_every: 10
+  ckpt_every: 500
+  sample_every: 250
+  num_sample_videos: 2
+
+precision:
+  dtype: bfloat16
+  grad_scaler: false
+  gradient_checkpointing: true

@@ -1,13 +1,22 @@
-"""Thin wrapper around the Wan2.2-TI2V-5B base model.
+"""Thin wrapper around the Wan2.2 family of base models.
 
 Responsibilities:
   - Load the pretrained VAE (frozen) and text encoder (frozen).
   - Provide a stable interface for the rest of Ogenti regardless of upstream
     Wan2.2 API churn.
 
+As of RFC-0006 the default backbone is **Wan2.2-T2V-A14B** (14B-param MoE).
+The legacy TI2V-5B path is still supported by passing
+``Wan22BackboneConfig(model_id="Wan-AI/Wan2.2-TI2V-5B")`` but is no longer the
+default — empirically the 5B variant cannot hold form past ~3s, mangles glyphs,
+and ignores complex prompts (see RFC-0006 for the post-mortem).
+
 Note: the actual Wan2.2 transformer is *not* used directly at inference time
 in Ogenti — it is dissected by ogenti/retrofit/surgery/wan22_import.py into
-OgentiBlocks. This wrapper exists for VAE encode/decode + text embedding.
+OgentiBlocks. This wrapper exists for VAE encode/decode + text embedding,
+both of which are identical across the Wan2.2 5B / A14B / I2V variants
+(same T5 text encoder, same 16-channel VAE with 4× temporal / 8× spatial
+compression).
 """
 
 from __future__ import annotations
@@ -24,9 +33,18 @@ from ogenti.utils.logging import get_logger
 log = get_logger("ogenti.wan22")
 
 
+# Canonical model ids per Wan2.2 sub-variant.
+WAN22_MODEL_IDS: dict[str, str] = {
+    "t2v_a14b": "Wan-AI/Wan2.2-T2V-A14B",
+    "i2v_a14b": "Wan-AI/Wan2.2-I2V-A14B",
+    "ti2v_5b": "Wan-AI/Wan2.2-TI2V-5B",
+}
+
+
 @dataclass
 class Wan22BackboneConfig:
-    model_id: str = "Wan-AI/Wan2.2-TI2V-5B"
+    # Default to the 14B MoE T2V model (RFC-0006).
+    model_id: str = "Wan-AI/Wan2.2-T2V-A14B"
     weights_dir: Optional[str] = None
     vae_dtype: torch.dtype = torch.float32
     text_dtype: torch.dtype = torch.bfloat16
