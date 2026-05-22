@@ -1,0 +1,120 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ogenti"
+version = "0.0.1"
+description = "Ad-grade video generation via structural retrofit of pretrained DiT backbones."
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+license = { text = "Apache-2.0" }
+authors = [{ name = "ogenti team" }]
+
+dependencies = [
+    # core DL
+    "torch>=2.4.0",
+    "torchvision>=0.19.0",
+    "torchaudio>=2.4.0",
+    "einops>=0.8.0",
+    "einx>=0.3.0",
+
+    # diffusion / model hubs
+    "diffusers>=0.31.0",
+    "transformers>=4.46.0",
+    "accelerate>=1.1.0",
+    "safetensors>=0.4.5",
+    "huggingface_hub>=0.26.0",
+    "sentencepiece>=0.2.0",
+
+    # video / image io
+    "av>=13.0.0",
+    "decord>=0.6.0; platform_system != 'Windows'",
+    "imageio>=2.36.0",
+    "imageio-ffmpeg>=0.5.1",
+    "opencv-python>=4.10.0",
+    "pillow>=11.0.0",
+
+    # auxiliary signals (anatomical / glyph)
+    "mediapipe>=0.10.18",
+    "easyocr>=1.7.2",
+
+    # training infra
+    "deepspeed>=0.15.0; platform_system != 'Windows'",
+    "bitsandbytes>=0.44.0; platform_system != 'Windows'",
+    "wandb>=0.18.0",
+    "tensorboard>=2.18.0",
+    "omegaconf>=2.3.0",
+    "hydra-core>=1.3.2",
+
+    # numerics / utils
+    "numpy>=1.26.0,<2.2",
+    "scipy>=1.14.0",
+    "tqdm>=4.67.0",
+    "rich>=13.9.0",
+    "pydantic>=2.9.0",
+    "typer>=0.13.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-xdist>=3.6.0",
+    "ruff>=0.7.0",
+    "mypy>=1.13.0",
+    "pre-commit>=4.0.0",
+]
+flash = [
+    # speed extras — install manually per CUDA
+    "flash-attn>=2.7.0",
+    "xformers>=0.0.28",
+]
+physics = [
+    # default rigid-body backend (zlib license)
+    "pybullet>=3.2.6",
+]
+physics-advanced = [
+    # GPU multi-physics (Apache-2.0)
+    "genesis-world>=0.2.0",
+    # articulated rigs (Apache-2.0)
+    "mujoco>=3.2.0",
+    # JAX differentiable physics (Apache-2.0)
+    "brax>=0.10.5",
+]
+llm-scene = [
+    # for prompt→SceneSpec LLM fallback
+    "anthropic>=0.40.0",
+    "openai>=1.50.0",
+]
+clip-materials = [
+    # CLIP zero-shot material classifier
+    "open_clip_torch>=2.30.0",
+]
+
+[project.scripts]
+ogenti = "ogenti.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ogenti*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "PL"]
+ignore = ["PLR0913", "PLR2004", "E501"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = false
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "gpu: requires CUDA",
+]

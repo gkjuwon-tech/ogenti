@@ -1,0 +1,75 @@
+# Stage 1: warm-start from Wan2.2 weights, train Ogenti-specific submodules only.
+# Diffusion loss + identity loss enabled. Anatomy/OCR losses ramp in later stages.
+
+stage_name: retrofit_stage1
+seed: 42
+
+dataset:
+  _target_: ogenti.data.loaders.video_dataset.VideoDatasetConfig
+  manifest_path: data/manifests/ads_train.jsonl
+  root: data/
+  target_frames: 81
+  target_height: 480
+  target_width: 832
+  target_fps: 24
+  load_keypoints: true
+  load_glyph_regions: true
+  max_glyph_regions: 16
+  glyph_crop_size: 128
+
+dataloader:
+  batch_size: 1
+  num_workers: 4
+  pin_memory: true
+  prefetch_factor: 2
+  gradient_accumulation_steps: 4
+
+optim:
+  optimizer: adamw
+  lr: 1.0e-5
+  betas: [0.9, 0.95]
+  weight_decay: 0.01
+  grad_clip: 1.0
+
+scheduler:
+  type: cosine
+  warmup_steps: 500
+  total_steps: 30000
+  min_lr: 1.0e-7
+
+flow:
+  shift: 7.0
+  logit_mean: 0.0
+  logit_std: 1.0
+
+loss_weights:
+  diffusion: 1.0
+  identity: 0.1
+  anatomy: 0.0           # ramps in stage 2
+  ocr: 0.0               # ramps in stage 3
+  frequency_skin: 0.0    # ramps in stage 4 (tanghulu killer)
+  temporal_realism: 0.0  # ramps in stage 4 (motion realism)
+
+retrofit:
+  freeze_backbone_weights: true
+  unfreeze_modules:
+    - "entity_bank"
+    - "blocks.*.entity_refine"
+    - "blocks.*.patch_from_entity"
+    - "blocks.*.glyph_fuse"
+    - "glyph_branch"
+    - "camera_motion_embed"
+    - "skin_detail_head"
+
+logging:
+  run_dir: outputs/runs/retrofit_stage1
+  wandb_project: ogenti
+  log_every: 50
+  ckpt_every: 1000
+  sample_every: 500
+  num_sample_videos: 2
+
+precision:
+  dtype: bfloat16
+  grad_scaler: false
+  gradient_checkpointing: true

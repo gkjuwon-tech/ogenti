@@ -1,0 +1,67 @@
+_target_: ogenti.models.ogenti_transformer.OgentiTransformerConfig
+
+in_channels: 16
+out_channels: 16
+dim: 3072
+num_blocks: 30
+num_heads: 24
+head_dim: 128
+mlp_ratio: 4.0
+text_dim: 4096
+cond_dim: 3072
+
+patch:
+  in_channels: 16
+  embed_dim: 3072
+  patch_size: [1, 2, 2]
+
+rope:
+  head_dim: 128
+  t_split: 32
+  h_split: 48
+  w_split: 48
+
+entity:
+  num_slots: 32
+  dim: 3072
+  init_scale: 0.02
+
+glyph:
+  in_channels: 3
+  embed_dim: 1024
+  patch_size: [8, 8]
+  num_blocks: 4
+  num_heads: 16
+  head_dim: 64
+  out_dim: 3072
+  max_regions: 16
+  tokens_per_region: 32
+
+enable_entity_attention: true
+enable_glyph_fusion: true
+glyph_fusion_start_block: 20
+
+enable_camera_motion_cond: true
+camera_motion:
+  descriptor_dim: 8
+  embed_dim: 256
+  out_dim: 3072
+  zero_init: true
+
+enable_skin_detail_head: true
+skin_detail:
+  in_channels: 3
+  hidden: 64
+  num_blocks: 4
+  out_channels: 3
+  residual_scale_init: 0.0
+  cond_dim: 64
+
+enable_physics_keyframes_cond: true
+physics_keyframes:
+  max_objects: 8
+  tokens_per_object: 16
+  descriptor_per_token: 10
+  embed_dim: 256
+  out_dim: 3072
+  zero_init: true
