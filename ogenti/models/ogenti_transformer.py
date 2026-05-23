@@ -14,6 +14,8 @@ from typing import Optional
 import torch
 from torch import Tensor, nn
 
+from einops import rearrange
+
 from ogenti.models.blocks.ogenti_block import OgentiBlock, OgentiBlockConfig
 from ogenti.modules.attention.rope import AxialRoPE3D, RopeConfig
 from ogenti.modules.conditioning.camera_motion import (
@@ -30,7 +32,13 @@ from ogenti.modules.conditioning.subject_motion import (
     SubjectMotionEmbed,
     SubjectMotionEmbedConfig,
 )
-from ogenti.modules.conditioning.timestep import TimestepConditioningHead
+from ogenti.modules.conditioning.timestep import (
+    SinusoidalTimestepEmbedding,
+    WanOutputHead,
+    WanTextEmbedding,
+    WanTimeEmbedding,
+    WanTimeProjection,
+)
 from ogenti.modules.glyph.glyph_branch import GlyphBranch, GlyphBranchConfig
 from ogenti.modules.identity.entity_tokens import EntityBankConfig, EntityTokenBank
 from ogenti.modules.postprocess.film_grain import FilmGrainConfig, FilmGrainHead
@@ -38,7 +46,7 @@ from ogenti.modules.postprocess.lens_artifacts import LensArtifactConfig, LensAr
 from ogenti.modules.postprocess.motion_blur import MotionBlurConfig, MotionBlurHead, estimate_flow_from_frames
 from ogenti.modules.texture.material_detail_head import UMDHConfig, UniversalMaterialDetailHead
 from ogenti.modules.texture.skin_detail_head import SDRHConfig, SkinDetailResidualHead
-from ogenti.modules.tokenizers.patch_embed import PatchEmbed3D, PatchEmbed3DConfig, PatchUnembed3D
+from ogenti.modules.tokenizers.patch_embed import PatchEmbed3DConfig
 
 
 @dataclass
@@ -50,8 +58,11 @@ class OgentiTransformerConfig:
     num_heads: int = 24
     head_dim: int = 128
     mlp_ratio: float = 4.0
+    ffn_dim: Optional[int] = None  # if None: derived from mlp_ratio. Wan A14B: 13824.
     text_dim: int = 4096
+    freq_dim: int = 256             # sinusoidal timestep dim fed into time_embedding
     cond_dim: int = 3072
+    qk_norm_mode: str = "per_channel"  # Wan2.2 native
 
     patch: PatchEmbed3DConfig = field(default_factory=PatchEmbed3DConfig)
     rope: RopeConfig = field(default_factory=lambda: RopeConfig(head_dim=128, t_split=32, h_split=48, w_split=48))
@@ -120,27 +131,20 @@ class OgentiTransformer(nn.Module):
         super().__init__()
         self.config = config
 
-        # ── patch embed ──────────────────────────────────────────────
-        self.patch_embed = PatchEmbed3D(
-            PatchEmbed3DConfig(
-                in_channels=config.in_channels,
-                embed_dim=config.dim,
-                patch_size=config.patch.patch_size,
-            )
+        # ── patch embed (Wan-native: flat `patch_embedding` Conv3d) ──
+        pt, ph, pw = config.patch.patch_size
+        self.patch_embedding = nn.Conv3d(
+            config.in_channels,
+            config.dim,
+            kernel_size=(pt, ph, pw),
+            stride=(pt, ph, pw),
         )
 
-        if config.enable_ti2v_mode:
-            self.text_proj = nn.Sequential(
-                nn.Linear(config.text_dim, config.dim, bias=True),
-                nn.SiLU(),
-                nn.Linear(config.dim, config.dim, bias=True)
-            )
-            self.time_projection = nn.Linear(config.cond_dim, config.cond_dim, bias=True)
-        else:
-            self.text_proj = nn.Linear(config.text_dim, config.dim, bias=True)
-            self.time_projection = None
-
-        self.timestep_head = TimestepConditioningHead(dim=config.cond_dim)
+        # ── text / time embeddings (Wan-native 2-layer MLPs) ─────────
+        self.text_embedding = WanTextEmbedding(text_dim=config.text_dim, dim=config.dim)
+        self.sinusoidal_t = SinusoidalTimestepEmbedding(config.freq_dim)
+        self.time_embedding = WanTimeEmbedding(freq_dim=config.freq_dim, dim=config.dim)
+        self.time_projection = WanTimeProjection(dim=config.dim)
 
         # ── conditioning embeds ──────────────────────────────────────
         self.camera_motion_embed: Optional[CameraMotionEmbed] = None
@@ -237,7 +241,7 @@ class OgentiTransformer(nn.Module):
             )
             self.glyph_branch = GlyphBranch(gcfg)
 
-        # ── transformer blocks ───────────────────────────────────────
+        # ── transformer blocks (Wan-native + Ogenti extras) ──────────
         self.blocks = nn.ModuleList()
         for i in range(config.num_blocks):
             block_cfg = OgentiBlockConfig(
@@ -245,31 +249,23 @@ class OgentiTransformer(nn.Module):
                 num_heads=config.num_heads,
                 head_dim=config.head_dim,
                 mlp_ratio=config.mlp_ratio,
-                cond_dim=config.cond_dim,
+                ffn_dim=config.ffn_dim,
+                qk_norm_mode=config.qk_norm_mode,
                 enable_entity_attention=config.enable_entity_attention,
                 enable_glyph_fusion=(
                     config.enable_glyph_fusion and i >= config.glyph_fusion_start_block
                 ),
-                enable_cross_attn=config.enable_ti2v_mode,
+                # Wan2.2-A14B always has per-block text cross-attention; we keep it
+                # always-on so we have somewhere to land the cross_attn shards.
+                enable_cross_attn=True,
                 cross_attn_dim=config.dim,
                 source_block_name=f"transformer_blocks.{i}",
             )
             self.blocks.append(OgentiBlock(block_cfg))
 
-        # ── output head ─────────────────────────────────────────────
-        self.norm_out = nn.LayerNorm(config.dim, elementwise_affine=False)
-        self.adaln_out = nn.Linear(config.cond_dim, 2 * config.dim, bias=True)
-        nn.init.zeros_(self.adaln_out.weight)
-        nn.init.zeros_(self.adaln_out.bias)
-
-        self.unpatchify = PatchUnembed3D(
-            PatchEmbed3DConfig(
-                in_channels=config.out_channels,
-                embed_dim=config.dim,
-                patch_size=config.patch.patch_size,
-            ),
-            out_channels=config.out_channels,
-        )
+        # ── output head (Wan-native: `head.modulation` Param + `head.head` Linear) ─
+        out_dim = config.out_channels * pt * ph * pw
+        self.head = WanOutputHead(dim=config.dim, out_dim=out_dim)
 
     # ────────────────────────────────────────────────────────────────
     # Forward — latent space
@@ -292,47 +288,43 @@ class OgentiTransformer(nn.Module):
         physics_keyframe_object_mask: Optional[Tensor] = None,
     ) -> Tensor:
         b = latents.shape[0]
-        patch_tokens, grid = self.patch_embed(latents)
-        t_grid, h_grid, w_grid = grid
+        d = self.config.dim
+        pt, ph, pw = self.config.patch.patch_size
+
+        # ── patch embed (B, C, T, H, W) -> (B, N, dim) ──────────────
+        x_emb = self.patch_embedding(latents)
+        _, _, t_grid, h_grid, w_grid = x_emb.shape
+        patch_tokens = rearrange(x_emb, "b d t h w -> b (t h w) d")
 
         rope_freqs = self.rope.freqs(t_grid, h_grid, w_grid, device=latents.device)
 
-        # ── build conditioning vector ────────────────────────────────
-        text_encoded = self.text_proj(text_embeddings)
-        context = text_encoded if self.config.enable_ti2v_mode else None
-        
-        text_cond = text_encoded.mean(dim=1)
-        cond = self.timestep_head(timesteps) + text_cond
+        # ── text / time conditioning (Wan-native) ────────────────────
+        context = self.text_embedding(text_embeddings)              # (B, L, dim)
+        t_emb = self.time_embedding(self.sinusoidal_t(timesteps))   # (B, dim)
 
-        if self.time_projection is not None:
-            cond = cond + self.time_projection(cond)
-
+        cond = t_emb
         if self.camera_motion_embed is not None:
-            cm_cond = self.camera_motion_embed(
+            cond = cond + self.camera_motion_embed(
                 camera_motion_descriptor, batch_size=b, device=latents.device, dtype=cond.dtype
             )
-            cond = cond + cm_cond
-
         if self.subject_motion_embed is not None:
-            sm_cond = self.subject_motion_embed(
+            cond = cond + self.subject_motion_embed(
                 subject_motion_descriptors, subject_motion_mask,
                 batch_size=b, device=latents.device, dtype=cond.dtype,
             )
-            cond = cond + sm_cond
-
         if self.micro_event_embed is not None:
-            me_cond = self.micro_event_embed(
+            cond = cond + self.micro_event_embed(
                 micro_event_blink, micro_event_breath, micro_event_idle,
                 batch_size=b, device=latents.device, dtype=cond.dtype,
             )
-            cond = cond + me_cond
-
         if self.physics_keyframe_embed is not None:
-            pk_cond = self.physics_keyframe_embed(
+            cond = cond + self.physics_keyframe_embed(
                 physics_keyframe_descriptor, physics_keyframe_object_mask,
                 batch_size=b, device=latents.device, dtype=cond.dtype,
             )
-            cond = cond + pk_cond
+
+        # Wan2.2 per-step AdaLN params: time_projection(cond) -> (B, 6*dim) -> (B, 6, dim).
+        e6 = self.time_projection(cond).reshape(b, 6, d)
 
         # ── entity tokens ────────────────────────────────────────────
         entity_tokens = None
@@ -349,7 +341,7 @@ class OgentiTransformer(nn.Module):
         for block in self.blocks:
             patch_tokens, entity_tokens = block(
                 patch_tokens=patch_tokens,
-                timestep_emb=cond,
+                e6=e6,
                 entity_tokens=entity_tokens,
                 glyph_stream=glyph_stream,
                 glyph_mask=glyph_token_mask,
@@ -357,11 +349,16 @@ class OgentiTransformer(nn.Module):
                 rope_freqs=rope_freqs,
             )
 
-        # ── output projection ────────────────────────────────────────
-        shift, scale = self.adaln_out(nn.functional.silu(cond)).chunk(2, dim=-1)
-        patch_tokens = self.norm_out(patch_tokens) * (1 + scale.unsqueeze(1)) + shift.unsqueeze(1)
+        # ── output projection (Wan-native head: norm + AdaLN + Linear) ─
+        x = self.head(patch_tokens, t_emb)
 
-        return self.unpatchify(patch_tokens, grid)
+        # ── unpatchify back to (B, C_out, T, H, W) ──────────────────
+        return rearrange(
+            x,
+            "b (t h w) (c pt ph pw) -> b c (t pt) (h ph) (w pw)",
+            t=t_grid, h=h_grid, w=w_grid,
+            pt=pt, ph=ph, pw=pw, c=self.config.out_channels,
+        )
 
     # ────────────────────────────────────────────────────────────────
     # Post-VAE-decode refinement methods (pixel space)

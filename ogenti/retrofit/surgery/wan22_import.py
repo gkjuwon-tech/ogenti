@@ -38,6 +38,15 @@ log = get_logger("ogenti.retrofit.wan22")
 ExpertSelector = Literal["low_noise", "high_noise"]
 
 
+# OgentiTransformer (post-RFC-0006-arch-fix) uses the Wan2.2-native state-dict
+# layout for the per-block core: `modulation` is a parameter, `ffn` is a
+# `WanFeedForward` Sequential (state-dict keys `ffn.0.*` / `ffn.2.*`), and the
+# self/cross attention `q_norm` / `k_norm` are per-channel RMSNorms.
+#
+# The only thing the keymap still needs to rename is the q/k/v/o linear suffix
+# (`q.weight` -> `q_proj.weight`) since Ogenti's `MultiHeadAttention` uses
+# `{q,k,v,out}_proj` attribute names. Everything else is identity-mapped.
+
 # Variant A: official Wan2.2 repo naming
 WAN22_KEYMAP_OFFICIAL_BLOCK: dict[str, str] = {
     "self_attn.q.weight": "self_attn.q_proj.weight",
@@ -50,10 +59,11 @@ WAN22_KEYMAP_OFFICIAL_BLOCK: dict[str, str] = {
     "self_attn.o.bias": "self_attn.out_proj.bias",
     "self_attn.q_norm.weight": "self_attn.q_norm.weight",
     "self_attn.k_norm.weight": "self_attn.k_norm.weight",
-    "ffn.0.weight": "ffn.w1.weight",
-    "ffn.2.weight": "ffn.w2.weight",
-    "ffn.gate.weight": "ffn.w3.weight",
-    "modulation": "adaln.linear.weight",
+    "ffn.0.weight": "ffn.0.weight",
+    "ffn.0.bias": "ffn.0.bias",
+    "ffn.2.weight": "ffn.2.weight",
+    "ffn.2.bias": "ffn.2.bias",
+    "modulation": "modulation",
 }
 
 # Variant B: diffusers WanTransformer3DModel naming
@@ -68,10 +78,9 @@ WAN22_KEYMAP_DIFFUSERS_BLOCK: dict[str, str] = {
     "attn1.to_out.0.bias": "self_attn.out_proj.bias",
     "attn1.norm_q.weight": "self_attn.q_norm.weight",
     "attn1.norm_k.weight": "self_attn.k_norm.weight",
-    "ffn.net.0.proj.weight": "ffn.w1.weight",
-    "ffn.net.2.weight": "ffn.w2.weight",
-    "ffn.net.0.proj_gate.weight": "ffn.w3.weight",
-    "scale_shift_table": "adaln.linear.weight",
+    "ffn.net.0.proj.weight": "ffn.0.weight",
+    "ffn.net.2.weight": "ffn.2.weight",
+    "scale_shift_table": "modulation",
 }
 
 # Variant C: official Wan2.2-TI2V-5B naming
@@ -96,65 +105,74 @@ WAN22_KEYMAP_TI2V_BLOCK: dict[str, str] = {
     "cross_attn.o.bias": "cross_attn.out_proj.bias",
     "cross_attn.norm_q.weight": "cross_attn.q_norm.weight",
     "cross_attn.norm_k.weight": "cross_attn.k_norm.weight",
-    "ffn.0.weight": "ffn.w1.weight",
-    "ffn.0.bias": "ffn.w1.bias",
-    "ffn.2.weight": "ffn.w2.weight",
-    "ffn.2.bias": "ffn.w2.bias",
-    "modulation": "adaln.linear.weight",
+    "ffn.0.weight": "ffn.0.weight",
+    "ffn.0.bias": "ffn.0.bias",
+    "ffn.2.weight": "ffn.2.weight",
+    "ffn.2.bias": "ffn.2.bias",
+    "modulation": "modulation",
     "norm3.weight": "norm3.weight",
     "norm3.bias": "norm3.bias",
 }
 
 WAN22_KEYMAP_OFFICIAL_TOP: dict[str, str] = {
-    "patch_embedding.weight": "patch_embed.proj.weight",
-    "patch_embedding.bias": "patch_embed.proj.bias",
-    "text_embedding.0.weight": "text_proj.weight",
-    "text_embedding.0.bias": "text_proj.bias",
-    "time_embedding.0.weight": "timestep_head.mlp.0.weight",
-    "time_embedding.0.bias": "timestep_head.mlp.0.bias",
-    "time_embedding.2.weight": "timestep_head.mlp.2.weight",
-    "time_embedding.2.bias": "timestep_head.mlp.2.bias",
-    "head.modulation": "adaln_out.weight",
-    "head.head.weight": "unpatchify.proj.weight",
-    "head.head.bias": "unpatchify.proj.bias",
+    "patch_embedding.weight": "patch_embedding.weight",
+    "patch_embedding.bias": "patch_embedding.bias",
+    "text_embedding.0.weight": "text_embedding.0.weight",
+    "text_embedding.0.bias": "text_embedding.0.bias",
+    "text_embedding.2.weight": "text_embedding.2.weight",
+    "text_embedding.2.bias": "text_embedding.2.bias",
+    "time_embedding.0.weight": "time_embedding.0.weight",
+    "time_embedding.0.bias": "time_embedding.0.bias",
+    "time_embedding.2.weight": "time_embedding.2.weight",
+    "time_embedding.2.bias": "time_embedding.2.bias",
+    "time_projection.1.weight": "time_projection.1.weight",
+    "time_projection.1.bias": "time_projection.1.bias",
+    "head.modulation": "head.modulation",
+    "head.head.weight": "head.head.weight",
+    "head.head.bias": "head.head.bias",
 }
 
 WAN22_KEYMAP_DIFFUSERS_TOP: dict[str, str] = {
-    "patch_embedding.weight": "patch_embed.proj.weight",
-    "patch_embedding.bias": "patch_embed.proj.bias",
-    "condition_embedder.text_embedder.linear_1.weight": "text_proj.weight",
-    "condition_embedder.text_embedder.linear_1.bias": "text_proj.bias",
-    "condition_embedder.time_embedder.linear_1.weight": "timestep_head.mlp.0.weight",
-    "condition_embedder.time_embedder.linear_1.bias": "timestep_head.mlp.0.bias",
-    "condition_embedder.time_embedder.linear_2.weight": "timestep_head.mlp.2.weight",
-    "condition_embedder.time_embedder.linear_2.bias": "timestep_head.mlp.2.bias",
-    "scale_shift_table": "adaln_out.weight",
-    "proj_out.weight": "unpatchify.proj.weight",
-    "proj_out.bias": "unpatchify.proj.bias",
+    "patch_embedding.weight": "patch_embedding.weight",
+    "patch_embedding.bias": "patch_embedding.bias",
+    "condition_embedder.text_embedder.linear_1.weight": "text_embedding.0.weight",
+    "condition_embedder.text_embedder.linear_1.bias": "text_embedding.0.bias",
+    "condition_embedder.text_embedder.linear_2.weight": "text_embedding.2.weight",
+    "condition_embedder.text_embedder.linear_2.bias": "text_embedding.2.bias",
+    "condition_embedder.time_embedder.linear_1.weight": "time_embedding.0.weight",
+    "condition_embedder.time_embedder.linear_1.bias": "time_embedding.0.bias",
+    "condition_embedder.time_embedder.linear_2.weight": "time_embedding.2.weight",
+    "condition_embedder.time_embedder.linear_2.bias": "time_embedding.2.bias",
+    "condition_embedder.time_proj.weight": "time_projection.1.weight",
+    "condition_embedder.time_proj.bias": "time_projection.1.bias",
+    "scale_shift_table": "head.modulation",
+    "proj_out.weight": "head.head.weight",
+    "proj_out.bias": "head.head.bias",
 }
 
 WAN22_KEYMAP_TI2V_TOP: dict[str, str] = {
-    "patch_embedding.weight": "patch_embed.proj.weight",
-    "patch_embedding.bias": "patch_embed.proj.bias",
-    "text_embedding.0.weight": "text_proj.0.weight",
-    "text_embedding.0.bias": "text_proj.0.bias",
-    "text_embedding.2.weight": "text_proj.2.weight",
-    "text_embedding.2.bias": "text_proj.2.bias",
-    "time_embedding.0.weight": "timestep_head.mlp.0.weight",
-    "time_embedding.0.bias": "timestep_head.mlp.0.bias",
-    "time_embedding.2.weight": "timestep_head.mlp.2.weight",
-    "time_embedding.2.bias": "timestep_head.mlp.2.bias",
-    "time_projection.1.weight": "time_projection.weight",
-    "time_projection.1.bias": "time_projection.bias",
-    "head.modulation": "adaln_out.weight",
-    "head.head.weight": "unpatchify.proj.weight",
-    "head.head.bias": "unpatchify.proj.bias",
+    "patch_embedding.weight": "patch_embedding.weight",
+    "patch_embedding.bias": "patch_embedding.bias",
+    "text_embedding.0.weight": "text_embedding.0.weight",
+    "text_embedding.0.bias": "text_embedding.0.bias",
+    "text_embedding.2.weight": "text_embedding.2.weight",
+    "text_embedding.2.bias": "text_embedding.2.bias",
+    "time_embedding.0.weight": "time_embedding.0.weight",
+    "time_embedding.0.bias": "time_embedding.0.bias",
+    "time_embedding.2.weight": "time_embedding.2.weight",
+    "time_embedding.2.bias": "time_embedding.2.bias",
+    "time_projection.1.weight": "time_projection.1.weight",
+    "time_projection.1.bias": "time_projection.1.bias",
+    "head.modulation": "head.modulation",
+    "head.head.weight": "head.head.weight",
+    "head.head.bias": "head.head.bias",
 }
 
 # Variant D: Wan2.2-{T2V,I2V}-A14B per-expert state dict.
 # Each expert (high_noise_model / low_noise_model) ships as its own shard set
-# with the same intra-block naming as the official 5B repo, but the top-level
-# layout matches official (no extra text_proj.2.*, no time_projection.*).
+# whose intra-block naming matches the upstream Wan2.2 reference repo.
+# Now that OgentiTransformer uses the Wan-native block layout, this map is
+# almost entirely identity — we only rename the q/k/v/o linear suffix.
 WAN22_KEYMAP_A14B_BLOCK: dict[str, str] = {
     "self_attn.q.weight": "self_attn.q_proj.weight",
     "self_attn.q.bias": "self_attn.q_proj.bias",
@@ -176,28 +194,31 @@ WAN22_KEYMAP_A14B_BLOCK: dict[str, str] = {
     "cross_attn.o.bias": "cross_attn.out_proj.bias",
     "cross_attn.norm_q.weight": "cross_attn.q_norm.weight",
     "cross_attn.norm_k.weight": "cross_attn.k_norm.weight",
-    "ffn.0.weight": "ffn.w1.weight",
-    "ffn.0.bias": "ffn.w1.bias",
-    "ffn.2.weight": "ffn.w2.weight",
-    "ffn.2.bias": "ffn.w2.bias",
-    "ffn.gate.weight": "ffn.w3.weight",
-    "modulation": "adaln.linear.weight",
+    "ffn.0.weight": "ffn.0.weight",
+    "ffn.0.bias": "ffn.0.bias",
+    "ffn.2.weight": "ffn.2.weight",
+    "ffn.2.bias": "ffn.2.bias",
+    "modulation": "modulation",
     "norm3.weight": "norm3.weight",
     "norm3.bias": "norm3.bias",
 }
 
 WAN22_KEYMAP_A14B_TOP: dict[str, str] = {
-    "patch_embedding.weight": "patch_embed.proj.weight",
-    "patch_embedding.bias": "patch_embed.proj.bias",
-    "text_embedding.0.weight": "text_proj.weight",
-    "text_embedding.0.bias": "text_proj.bias",
-    "time_embedding.0.weight": "timestep_head.mlp.0.weight",
-    "time_embedding.0.bias": "timestep_head.mlp.0.bias",
-    "time_embedding.2.weight": "timestep_head.mlp.2.weight",
-    "time_embedding.2.bias": "timestep_head.mlp.2.bias",
-    "head.modulation": "adaln_out.weight",
-    "head.head.weight": "unpatchify.proj.weight",
-    "head.head.bias": "unpatchify.proj.bias",
+    "patch_embedding.weight": "patch_embedding.weight",
+    "patch_embedding.bias": "patch_embedding.bias",
+    "text_embedding.0.weight": "text_embedding.0.weight",
+    "text_embedding.0.bias": "text_embedding.0.bias",
+    "text_embedding.2.weight": "text_embedding.2.weight",
+    "text_embedding.2.bias": "text_embedding.2.bias",
+    "time_embedding.0.weight": "time_embedding.0.weight",
+    "time_embedding.0.bias": "time_embedding.0.bias",
+    "time_embedding.2.weight": "time_embedding.2.weight",
+    "time_embedding.2.bias": "time_embedding.2.bias",
+    "time_projection.1.weight": "time_projection.1.weight",
+    "time_projection.1.bias": "time_projection.1.bias",
+    "head.modulation": "head.modulation",
+    "head.head.weight": "head.head.weight",
+    "head.head.bias": "head.head.bias",
 }
 
 # A14B MoE subdirs inside a model snapshot directory.
@@ -485,13 +506,35 @@ def validate_keymap_dry_run(
 
 
 def _is_ogenti_specific_key(key: str) -> bool:
+    """Return True if `key` belongs to an Ogenti-only branch that has no Wan2.2
+    counterpart and should therefore NOT be reported as an unmatched_target.
+
+    These include the entity / glyph extras (Pass A / C of the OgentiBlock),
+    the additional conditioning embeds (camera / subject motion, micro events,
+    physics keyframes), the post-VAE pixel-space refinement heads, and the
+    axial RoPE buffers (which are computed, not loaded).
+    """
     patterns = [
+        # OgentiBlock extras (Pass A / C, zero-init gates)
         "entity_bank",
         "entity_refine",
         "patch_from_entity",
         "glyph_fuse",
         "glyph_branch",
         ".gate",
+        # Top-level conditioning embeds (zero-init out-projs at step 0)
+        "camera_motion_embed",
+        "subject_motion_embed",
+        "micro_event_embed",
+        "physics_keyframe_embed",
+        # Post-VAE pixel-space refinement heads
+        "skin_detail_head",
+        "material_detail_head",
+        "motion_blur_head",
+        "film_grain_head",
+        "lens_artifact_head",
+        # Axial RoPE buffers (recomputed at forward; never loaded)
+        "rope.",
     ]
     return any(p in key for p in patterns)
 

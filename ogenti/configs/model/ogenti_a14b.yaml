@@ -11,8 +11,11 @@
 #   - dim:        5120
 #   - num_blocks: 40
 #   - num_heads:  40 (head_dim 128)
-#   - ffn_hidden: 13824  (SwiGLU: dim * 4.0 * 2 / 3 rounded up to multiple of 256)
+#   - ffn_hidden: 13824  (2-layer GELU MLP with bias, NOT SwiGLU)
 #   - text_dim:   4096   (T5 last_hidden_state, same encoder as 5B)
+#   - freq_dim:   256    (sinusoidal timestep dim fed into time_embedding)
+#   - qk_norm:    per-channel RMSNorm (applied to full inner_dim BEFORE head split)
+#   - cross_attn: per-block text cross-attention (always-on for A14B)
 #   - patch:      [1, 2, 2] (latent T/H/W)
 #   - latent VAE: 16 channels, 4× temporal / 8× spatial compression
 
@@ -24,9 +27,12 @@ dim: 5120
 num_blocks: 40
 num_heads: 40
 head_dim: 128
-mlp_ratio: 4.0
+mlp_ratio: 2.7  # informational only; ffn_dim is the authoritative value below
+ffn_dim: 13824  # Wan A14B exact ffn hidden size
 text_dim: 4096
+freq_dim: 256
 cond_dim: 5120
+qk_norm_mode: per_channel
 
 patch:
   in_channels: 16
