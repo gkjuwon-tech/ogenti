@@ -1,0 +1,34 @@
+[2026-05-23T01:47:25+0000] ==> PHASE: preflight
+[2026-05-23T01:47:27+0000] torch: 2.4.1+cu124 True
+[2026-05-23T01:47:27+0000] gpu: NVIDIA A100-SXM4-80GB, 81920 MiB
+[2026-05-23T01:47:27+0000] ==> PHASE: waiting_hf_download
+[2026-05-23T01:47:27+0000]   hf_ready check: low_noise=4/6 high_noise=5/6 vae=1 text_enc=1 incomplete=3
+[2026-05-23T01:48:57+0000]   hf_ready check: low_noise=5/6 high_noise=5/6 vae=1 text_enc=1 incomplete=2
+[2026-05-23T01:50:27+0000]   hf_ready check: low_noise=5/6 high_noise=6/6 vae=1 text_enc=1 incomplete=1
+[2026-05-23T01:51:57+0000]   hf_ready check: low_noise=6/6 high_noise=6/6 vae=1 text_enc=1 incomplete=0
+[2026-05-23T01:51:57+0000] Wan2.2-T2V-A14B verified complete
+[2026-05-23T01:51:57+0000] ==> PHASE: waiting_dataset
+[2026-05-23T01:51:57+0000]   dataset target reached (161 >= 80) — proceeding
+[2026-05-23T01:51:57+0000] dataset finalized: 161 clips
+[2026-05-23T01:51:57+0000] ==> PHASE: build_presim
+[2026-05-23T01:52:01+0000] presim: 161 manifest entries, 112 physics_keyframes .npz files
+[2026-05-23T01:52:01+0000] ==> PHASE: validate_keymap
+[2026-05-23T01:54:29+0000] WARN: validate_keymap rc=2; see 01_keymap_report.json. Continuing — retrofit_import will hard-fail if dims are wrong.
+[2026-05-23T01:54:29+0000] ==> PHASE: retrofit_import
+[2026-05-23T02:07:56+0000] retrofit init checkpoint ready
+[2026-05-23T02:07:56+0000] ==> PHASE: before_video
+[2026-05-23T02:13:59+0000] WARN: BEFORE video failed (see 03_before_video.log). Continuing.
+[2026-05-23T02:13:59+0000] ==> PHASE: curriculum
+[2026-05-23T02:18:56+0000] curriculum exited rc=1
+[2026-05-23T02:18:56+0000] ==> PHASE: after_video
+[2026-05-23T02:18:56+0000] WARN: no curriculum checkpoint found; skipping AFTER video
+[2026-05-23T02:18:56+0000] ==> PHASE: comparison
+[2026-05-23T02:18:56+0000] WARN: missing before/after, skipping comparison
+[2026-05-23T02:18:56+0000] ==> PHASE: DONE
+[2026-05-23T02:18:56+0000] =============================
+[2026-05-23T02:18:56+0000] run_all.sh complete.
+[2026-05-23T02:18:56+0000] BEFORE:     outputs/samples/before.mp4 (MISSING)
+[2026-05-23T02:18:56+0000] AFTER:      outputs/samples/after.mp4  (MISSING)
+[2026-05-23T02:18:56+0000] COMPARISON: outputs/samples/comparison.mp4 (MISSING)
+[2026-05-23T02:18:56+0000] FINAL CKPT: NONE
+[2026-05-23T02:18:56+0000] =============================

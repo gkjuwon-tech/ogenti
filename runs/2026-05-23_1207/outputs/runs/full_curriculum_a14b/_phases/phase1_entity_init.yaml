@@ -1,0 +1,78 @@
+stage_name: phase1_entity_init
+seed: 42
+dataset:
+  _target_: ogenti.data.loaders.video_dataset.VideoDatasetConfig
+  manifest_path: data/manifests/ads_train.jsonl
+  root: data/
+  target_frames: 81
+  target_height: 480
+  target_width: 832
+  target_fps: 24
+  load_keypoints: true
+  load_glyph_regions: true
+  load_skin_masks: true
+  load_camera_motion: true
+  load_subject_motion: true
+  load_material_masks: true
+  load_object_trajectories: true
+  load_micro_events: true
+  load_physics_scenes: false
+  max_glyph_regions: 16
+  glyph_crop_size: 128
+dataloader:
+  batch_size: 1
+  num_workers: 4
+  pin_memory: true
+  prefetch_factor: 2
+  gradient_accumulation_steps: 4
+flow:
+  shift: 7.0
+  logit_mean: 0.0
+  logit_std: 1.0
+backbone:
+  family: wan22
+  model_id: Wan-AI/Wan2.2-T2V-A14B
+  expert: low_noise
+precision:
+  dtype: bfloat16
+  grad_scaler: false
+  gradient_checkpointing: true
+logging:
+  wandb_project: ogenti-curriculum
+  log_every: 25
+  ckpt_every: 250
+  sample_every: 500
+  num_sample_videos: 1
+  run_dir: outputs/runs/full_curriculum_a14b/phase1_entity_init
+optim:
+  optimizer: adamw
+  lr: 1.0e-05
+  betas:
+  - 0.9
+  - 0.95
+  weight_decay: 0.01
+  grad_clip: 1.0
+scheduler:
+  type: cosine
+  warmup_steps: 100
+  total_steps: 1000
+  min_lr: 1.0e-07
+loss_weights:
+  diffusion: 1.0
+  identity: 0.1
+  anatomy: 0.0
+  ocr: 0.0
+  frequency_skin: 0.0
+  temporal_realism: 0.0
+  physics: 0.0
+  motion_realism: 0.0
+  physics_keyframe: 0.0
+retrofit:
+  freeze_backbone_weights: true
+  unfreeze_modules:
+  - entity_bank
+  - blocks.*.entity_refine
+  - blocks.*.patch_from_entity
+  - blocks.*.glyph_fuse
+  - glyph_branch
+  - camera_motion_embed

@@ -1,0 +1,317 @@
+[05/23/26 02:14:01] INFO     loading curriculum from                            
+                             ogenti/configs/training/full_curriculum_a14b.yaml  
+                    INFO     === curriculum phase 1/5: phase1_entity_init ===   
+                    INFO     materialized phase config ->                       
+                             outputs/runs/full_curriculum_a14b/_phases/phase1_en
+                             tity_init.yaml                                     
+                    INFO     init from previous checkpoint:                     
+                             checkpoints/ogenti_a14b_retrofit_init              
+[05/23/26 02:14:01] INFO     === distributed init: world_size=1,                
+                             mixed_precision=bf16, grad_accum=4 ===             
+[05/23/26 02:16:27] INFO     loading init checkpoint from                       
+                             checkpoints/ogenti_a14b_retrofit_init              
+[05/23/26 02:18:44] INFO     trainable: 131.1M / 25373.6M total                 
+╭───────────────────── Traceback (most recent call last) ──────────────────────╮
+│ /usr/local/lib/python3.11/dist-packages/diffusers/utils/import_utils.py:1015 │
+│ in _get_module                                                               │
+│                                                                              │
+│   1012 │                                                                     │
+│   1013 │   def _get_module(self, module_name: str):                          │
+│   1014 │   │   try:                                                          │
+│ ❱ 1015 │   │   │   return importlib.import_module("." + module_name,         │
+│        self.__name__)                                                        │
+│   1016 │   │   except Exception as e:                                        │
+│   1017 │   │   │   raise RuntimeError(                                       │
+│   1018 │   │   │   │   f"Failed to import {self.__name__}.{module_name}      │
+│        because of the following error (look up to see its"                   │
+│                                                                              │
+│ /usr/lib/python3.11/importlib/__init__.py:126 in import_module               │
+│                                                                              │
+│   123 │   │   │   if character != '.':                                       │
+│   124 │   │   │   │   break                                                  │
+│   125 │   │   │   level += 1                                                 │
+│ ❱ 126 │   return _bootstrap._gcd_import(name[level:], package, level)        │
+│   127                                                                        │
+│   128                                                                        │
+│   129 _RELOADING = {}                                                        │
+│ in _gcd_import:1204                                                          │
+│ in _find_and_load:1176                                                       │
+│ in _find_and_load_unlocked:1126                                              │
+│ in _call_with_frames_removed:241                                             │
+│ in _gcd_import:1204                                                          │
+│ in _find_and_load:1176                                                       │
+│ in _find_and_load_unlocked:1147                                              │
+│ in _load_unlocked:690                                                        │
+│ in exec_module:940                                                           │
+│ in _call_with_frames_removed:241                                             │
+│                                                                              │
+│ /usr/local/lib/python3.11/dist-packages/diffusers/models/autoencoders/__init │
+│ __.py:1 in <module>                                                          │
+│                                                                              │
+│ ❱  1 from .autoencoder_asym_kl import AsymmetricAutoencoderKL                │
+│    2 from .autoencoder_dc import AutoencoderDC                               │
+│    3 from .autoencoder_kl import AutoencoderKL                               │
+│    4 from .autoencoder_kl_allegro import AutoencoderKLAllegro                │
+│                                                                              │
+│ /usr/local/lib/python3.11/dist-packages/diffusers/models/autoencoders/autoen │
+│ coder_asym_kl.py:21 in <module>                                              │
+│                                                                              │
+│    18 from ...utils.accelerate_utils import apply_forward_hook               │
+│    19 from ..modeling_outputs import AutoencoderKLOutput                     │
+│    20 from ..modeling_utils import ModelMixin                                │
+│ ❱  21 from .vae import AutoencoderMixin, DecoderOutput,                      │
+│       DiagonalGaussianDistribution, Encoder, MaskConditionDecoder            │
+│    22                                                                        │
+│    23                                                                        │
+│    24 class AsymmetricAutoencoderKL(ModelMixin, AutoencoderMixin,            │
+│       ConfigMixin):                                                          │
+│                                                                              │
+│ /usr/local/lib/python3.11/dist-packages/diffusers/models/autoencoders/vae.py │
+│ :24 in <module>                                                              │
+│                                                                              │
+│    21 from ...utils.torch_utils import randn_tensor                          │
+│    22 from ..activations import get_activation                               │
+│    23 from ..attention_processor import SpatialNorm                          │
+│ ❱  24 from ..unets.unet_2d_blocks import (                                   │
+│    25 │   AutoencoderTinyBlock,                                              │
+│    26 │   UNetMidBlock2D,                                                    │
+│    27 │   get_down_block,                                                    │
+│                                                                              │
+│ /usr/local/lib/python3.11/dist-packages/diffusers/models/unets/__init__.py:6 │
+│ in <module>                                                                  │
+│                                                                              │
+│    3                                                                         │
+│    4 if is_torch_available():                                                │
+│    5 │   from .unet_1d import UNet1DModel                                    │
+│ ❱  6 │   from .unet_2d import UNet2DModel                                    │
+│    7 │   from .unet_2d_condition import UNet2DConditionModel                 │
+│    8 │   from .unet_3d_condition import UNet3DConditionModel                 │
+│    9 │   from .unet_i2vgen_xl import I2VGenXLUNet                            │
+│                                                                              │
+│ /usr/local/lib/python3.11/dist-packages/diffusers/models/unets/unet_2d.py:23 │
+│ in <module>                                                                  │
+│                                                                              │
+│    20 from ...utils import BaseOutput                                        │
+│    21 from ..embeddings import GaussianFourierProjection, TimestepEmbedding, │
+│       Timesteps                                                              │
+│    22 from ..modeling_utils import ModelMixin                                │
+│ ❱  23 from .unet_2d_blocks import UNetMidBlock2D, get_down_block,            │
+│       get_up_block                                                           │
+│    24                                                                        │
+│    25                                                                        │
+│    26 @dataclass                                                             │
+│                                                                              │
+│ /usr/local/lib/python3.11/dist-packages/diffusers/models/unets/unet_2d_block │
+│ s.py:36 in <module>                                                          │
+│                                                                              │
+│     33 │   ResnetBlockCondNorm2D,                                            │
+│     34 │   Upsample2D,                                                       │
+│     35 )                                                                     │
+│ ❱   36 from ..transformers.dual_transformer_2d import DualTransformer2DModel │
+│     37 from ..transformers.transformer_2d import Transformer2DModel          │
+│     38                                                                       │
+│     39                                                                       │
+│                                                                              │
+│ /usr/local/lib/python3.11/dist-packages/diffusers/models/transformers/__init │
+│ __.py:5 in <module>                                                          │
+│                                                                              │
+│    2                                                                         │
+│    3                                                                         │
+│    4 if is_torch_available():                                                │
+│ ❱  5 │   from .ace_step_transformer import AceStepTransformer1DModel         │
+│    6 │   from .auraflow_transformer_2d import AuraFlowTransformer2DModel     │
+│    7 │   from .cogvideox_transformer_3d import CogVideoXTransformer3DModel   │
+│    8 │   from .consisid_transformer_3d import ConsisIDTransformer3DModel     │
+│                                                                              │
+│ /usr/local/lib/python3.11/dist-packages/diffusers/models/transformers/ace_st │
+│ ep_transformer.py:26 in <module>                                             │
+│                                                                              │
+│    23 from ...configuration_utils import ConfigMixin, register_to_config     │
+│    24 from ...utils import logging                                           │
+│    25 from ..attention import AttentionMixin, AttentionModuleMixin           │
+│ ❱  26 from ..attention_dispatch import (                                     │
+│    27 │   AttentionBackendName,                                              │
+│    28 │   _AttentionBackendRegistry,                                         │
+│    29 │   dispatch_attention_fn,                                             │
+│                                                                              │
+│ /usr/local/lib/python3.11/dist-packages/diffusers/models/attention_dispatch. │
+│ py:739 in <module>                                                           │
+│                                                                              │
+│    736 # Registrations are required for fullgraph tracing compatibility      │
+│    737 # TODO: this is only required because the beta release FA3 does not   │
+│        have it. There is a PR adding                                         │
+│    738 # this but it was never merged:                                       │
+│        https://github.com/Dao-AILab/flash-attention/pull/1590                │
+│ ❱  739 @_custom_op("_diffusers_flash_attn_3::_flash_attn_forward",           │
+│        mutates_args=(), device_types="cuda")                                 │
+│    740 def _wrapped_flash_attn_3(                                            │
+│    741 │   q: torch.Tensor,                                                  │
+│    742 │   k: torch.Tensor,                                                  │
+│                                                                              │
+│ /usr/local/lib/python3.11/dist-packages/torch/_library/custom_ops.py:119 in  │
+│ inner                                                                        │
+│                                                                              │
+│   116 │   │   if schema is None:                                             │
+│   117 │   │   │   import torch._custom_op.impl                               │
+│   118 │   │   │                                                              │
+│ ❱ 119 │   │   │   schema_str = torch._custom_op.impl.infer_schema(fn,        │
+│       mutates_args)                                                          │
+│   120 │   │   else:                                                          │
+│   121 │   │   │   schema_str = schema                                        │
+│   122 │   │   namespace, opname = name.split("::")                           │
+│                                                                              │
+│ /usr/local/lib/python3.11/dist-packages/torch/_library/infer_schema.py:42 in │
+│ infer_schema                                                                 │
+│                                                                              │
+│    39 │   │   │   error_fn(f"Parameter {name} must have a type annotation.") │
+│    40 │   │                                                                  │
+│    41 │   │   if param.annotation not in SUPPORTED_PARAM_TYPES.keys():       │
+│ ❱  42 │   │   │   error_fn(                                                  │
+│    43 │   │   │   │   f"Parameter {name} has unsupported type                │
+│       {param.annotation}. "                                                  │
+│    44 │   │   │   │   f"The valid types are:                                 │
+│       {SUPPORTED_PARAM_TYPES.keys()}."                                       │
+│    45 │   │   │   )                                                          │
+│                                                                              │
+│ /usr/local/lib/python3.11/dist-packages/torch/_library/infer_schema.py:21 in │
+│ error_fn                                                                     │
+│                                                                              │
+│    18 │   sig = inspect.signature(prototype_function)                        │
+│    19 │                                                                      │
+│    20 │   def error_fn(what):                                                │
+│ ❱  21 │   │   raise ValueError(                                              │
+│    22 │   │   │   f"infer_schema(func): {what} " f"Got func with signature   │
+│       {sig})"                                                                │
+│    23 │   │   )                                                              │
+│    24                                                                        │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ValueError: infer_schema(func): Parameter q has unsupported type torch.Tensor. 
+The valid types are: dict_keys([<class 'torch.Tensor'>, 
+typing.Optional[torch.Tensor], typing.Sequence[torch.Tensor], 
+typing.List[torch.Tensor], typing.Sequence[typing.Optional[torch.Tensor]], 
+typing.List[typing.Optional[torch.Tensor]], <class 'int'>, typing.Optional[int],
+typing.Sequence[int], typing.List[int], typing.Optional[typing.Sequence[int]], 
+typing.Optional[typing.List[int]], <class 'float'>, typing.Optional[float], 
+typing.Sequence[float], typing.List[float], 
+typing.Optional[typing.Sequence[float]], typing.Optional[typing.List[float]], 
+<class 'bool'>, typing.Optional[bool], typing.Sequence[bool], typing.List[bool],
+typing.Optional[typing.Sequence[bool]], typing.Optional[typing.List[bool]], 
+<class 'str'>, typing.Optional[str], typing.Union[int, float, bool], 
+typing.Union[int, float, bool, NoneType], typing.Sequence[typing.Union[int, 
+float, bool]], typing.List[typing.Union[int, float, bool]], <class 
+'torch.dtype'>, typing.Optional[torch.dtype], <class 'torch.device'>, 
+typing.Optional[torch.device]]). Got func with signature (q: 'torch.Tensor', k: 
+'torch.Tensor', v: 'torch.Tensor', softmax_scale: 'float | None' = None, causal:
+'bool' = False, qv: 'torch.Tensor | None' = None, q_descale: 'torch.Tensor | 
+None' = None, k_descale: 'torch.Tensor | None' = None, v_descale: 'torch.Tensor 
+| None' = None, attention_chunk: 'int' = 0, softcap: 'float' = 0.0, num_splits: 
+'int' = 1, pack_gqa: 'bool | None' = None, deterministic: 'bool' = False, 
+sm_margin: 'int' = 0) -> 'tuple[torch.Tensor, torch.Tensor]')
+
+The above exception was the direct cause of the following exception:
+
+╭───────────────────── Traceback (most recent call last) ──────────────────────╮
+│ /workspace/ogenti/ogenti/cli.py:111 in curriculum                            │
+│                                                                              │
+│   108 │   """Run a full multi-phase retrofit curriculum end-to-end."""       │
+│   109 │   from scripts.train.run_curriculum import run_curriculum            │
+│   110 │                                                                      │
+│ ❱ 111 │   run_curriculum(                                                    │
+│   112 │   │   curriculum_config=curriculum_config,                           │
+│   113 │   │   model_config=model_config,                                     │
+│   114 │   │   init_ckpt=init_ckpt,                                           │
+│                                                                              │
+│ /workspace/ogenti/scripts/train/run_curriculum.py:178 in run_curriculum      │
+│                                                                              │
+│   175 │   │   else:                                                          │
+│   176 │   │   │   log.info("no init checkpoint — training from raw model     │
+│       config")                                                               │
+│   177 │   │                                                                  │
+│ ❱ 178 │   │   run_training(                                                  │
+│   179 │   │   │   train_config=phase_yaml,                                   │
+│   180 │   │   │   model_config=model_config,                                 │
+│   181 │   │   │   init_ckpt=prev_ckpt,                                       │
+│                                                                              │
+│ /workspace/ogenti/scripts/train/train.py:131 in run_training                 │
+│                                                                              │
+│   128 │   │   │   text_dtype=torch.bfloat16 if mixed_precision == "bf16"     │
+│       else torch.float16,                                                    │
+│   129 │   │   )                                                              │
+│   130 │   )                                                                  │
+│ ❱ 131 │   backbone.load()                                                    │
+│   132 │   backbone.vae.to(accelerator.device)                                │
+│   133 │   backbone.text_encoder.to(accelerator.device)                       │
+│   134                                                                        │
+│                                                                              │
+│ /workspace/ogenti/ogenti/models/backbones/wan22_wrapper.py:67 in load        │
+│                                                                              │
+│    64 │                                                                      │
+│    65 │   def load(self) -> "Wan22Backbone":                                 │
+│    66 │   │   try:                                                           │
+│ ❱  67 │   │   │   from diffusers import AutoencoderKLWan                     │
+│    68 │   │   │   from transformers import AutoTokenizer, T5EncoderModel     │
+│    69 │   │   except ImportError as e:                                       │
+│    70 │   │   │   raise ImportError(                                         │
+│ in _handle_fromlist:1229                                                     │
+│                                                                              │
+│ /usr/local/lib/python3.11/dist-packages/diffusers/utils/import_utils.py:1006 │
+│ in __getattr__                                                               │
+│                                                                              │
+│   1003 │   │   │   value = self._get_module(name)                            │
+│   1004 │   │   elif name in self._class_to_module.keys():                    │
+│   1005 │   │   │   module = self._get_module(self._class_to_module[name])    │
+│ ❱ 1006 │   │   │   value = getattr(module, name)                             │
+│   1007 │   │   else:                                                         │
+│   1008 │   │   │   raise AttributeError(f"module {self.__name__} has no      │
+│        attribute {name}")                                                    │
+│   1009                                                                       │
+│                                                                              │
+│ /usr/local/lib/python3.11/dist-packages/diffusers/utils/import_utils.py:1005 │
+│ in __getattr__                                                               │
+│                                                                              │
+│   1002 │   │   if name in self._modules:                                     │
+│   1003 │   │   │   value = self._get_module(name)                            │
+│   1004 │   │   elif name in self._class_to_module.keys():                    │
+│ ❱ 1005 │   │   │   module = self._get_module(self._class_to_module[name])    │
+│   1006 │   │   │   value = getattr(module, name)                             │
+│   1007 │   │   else:                                                         │
+│   1008 │   │   │   raise AttributeError(f"module {self.__name__} has no      │
+│        attribute {name}")                                                    │
+│                                                                              │
+│ /usr/local/lib/python3.11/dist-packages/diffusers/utils/import_utils.py:1017 │
+│ in _get_module                                                               │
+│                                                                              │
+│   1014 │   │   try:                                                          │
+│   1015 │   │   │   return importlib.import_module("." + module_name,         │
+│        self.__name__)                                                        │
+│   1016 │   │   except Exception as e:                                        │
+│ ❱ 1017 │   │   │   raise RuntimeError(                                       │
+│   1018 │   │   │   │   f"Failed to import {self.__name__}.{module_name}      │
+│        because of the following error (look up to see its"                   │
+│   1019 │   │   │   │   f" traceback):\n{e}"                                  │
+│   1020 │   │   │   ) from e                                                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+RuntimeError: Failed to import diffusers.models.autoencoders.autoencoder_kl_wan 
+because of the following error (look up to see its traceback):
+infer_schema(func): Parameter q has unsupported type torch.Tensor. The valid 
+types are: dict_keys([<class 'torch.Tensor'>, typing.Optional[torch.Tensor], 
+typing.Sequence[torch.Tensor], typing.List[torch.Tensor], 
+typing.Sequence[typing.Optional[torch.Tensor]], 
+typing.List[typing.Optional[torch.Tensor]], <class 'int'>, typing.Optional[int],
+typing.Sequence[int], typing.List[int], typing.Optional[typing.Sequence[int]], 
+typing.Optional[typing.List[int]], <class 'float'>, typing.Optional[float], 
+typing.Sequence[float], typing.List[float], 
+typing.Optional[typing.Sequence[float]], typing.Optional[typing.List[float]], 
+<class 'bool'>, typing.Optional[bool], typing.Sequence[bool], typing.List[bool],
+typing.Optional[typing.Sequence[bool]], typing.Optional[typing.List[bool]], 
+<class 'str'>, typing.Optional[str], typing.Union[int, float, bool], 
+typing.Union[int, float, bool, NoneType], typing.Sequence[typing.Union[int, 
+float, bool]], typing.List[typing.Union[int, float, bool]], <class 
+'torch.dtype'>, typing.Optional[torch.dtype], <class 'torch.device'>, 
+typing.Optional[torch.device]]). Got func with signature (q: 'torch.Tensor', k: 
+'torch.Tensor', v: 'torch.Tensor', softmax_scale: 'float | None' = None, causal:
+'bool' = False, qv: 'torch.Tensor | None' = None, q_descale: 'torch.Tensor | 
+None' = None, k_descale: 'torch.Tensor | None' = None, v_descale: 'torch.Tensor 
+| None' = None, attention_chunk: 'int' = 0, softcap: 'float' = 0.0, num_splits: 
+'int' = 1, pack_gqa: 'bool | None' = None, deterministic: 'bool' = False, 
+sm_margin: 'int' = 0) -> 'tuple[torch.Tensor, torch.Tensor]')

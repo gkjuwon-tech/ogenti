@@ -1,0 +1,26 @@
+[05/23/26 01:54:31] INFO     === Wan2.2 -> Ogenti retrofit import ===           
+                    INFO     A14B MoE: selected expert 'low_noise' from         
+                             /workspace/wan2.2-t2v-a14b/low_noise_model         
+                    INFO     loading shard                                      
+                             diffusion_pytorch_model-00001-of-00006.safetensors 
+                    INFO     loading shard                                      
+                             diffusion_pytorch_model-00002-of-00006.safetensors 
+                    INFO     loading shard                                      
+                             diffusion_pytorch_model-00003-of-00006.safetensors 
+                    INFO     loading shard                                      
+                             diffusion_pytorch_model-00004-of-00006.safetensors 
+                    INFO     loading shard                                      
+                             diffusion_pytorch_model-00005-of-00006.safetensors 
+                    INFO     loading shard                                      
+                             diffusion_pytorch_model-00006-of-00006.safetensors 
+                    INFO     loaded 1095 source tensors                         
+                    INFO     variant detection scores: {'official': 11,         
+                             'diffusers': 2, 'ti2v': 15, 'a14b': 11} -> chose   
+                             'ti2v'                                             
+[05/23/26 01:57:15] INFO     import: variant=ti2v copied=407 shape_skip=122     
+                             unknown=566                                        
+                    INFO     retrofit invariant check passed: all Ogenti gates  
+                             are zero-initialized                               
+[05/23/26 01:57:16] INFO     retrofit done: copied=407 keys                     
+[05/23/26 02:07:51] INFO     checkpoint saved:                                  
+                             checkpoints/ogenti_a14b_retrofit_init (step=0)     

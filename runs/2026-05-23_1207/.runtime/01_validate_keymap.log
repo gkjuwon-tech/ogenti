@@ -1,0 +1,20 @@
+[05/23/26 01:52:03] INFO     A14B MoE: selected expert 'low_noise' from         
+                             /workspace/wan2.2-t2v-a14b/low_noise_model         
+                    INFO     loading shard                                      
+                             diffusion_pytorch_model-00001-of-00006.safetensors 
+                    INFO     loading shard                                      
+                             diffusion_pytorch_model-00002-of-00006.safetensors 
+                    INFO     loading shard                                      
+                             diffusion_pytorch_model-00003-of-00006.safetensors 
+                    INFO     loading shard                                      
+                             diffusion_pytorch_model-00004-of-00006.safetensors 
+                    INFO     loading shard                                      
+                             diffusion_pytorch_model-00005-of-00006.safetensors 
+                    INFO     loading shard                                      
+                             diffusion_pytorch_model-00006-of-00006.safetensors 
+[05/23/26 01:54:24] INFO     dry-run: variant=a14b ok=409 shape_mismatch=122    
+                             unmapped_src=564 unmatched_dst=356                 
+[05/23/26 01:54:29] INFO     report written:                                    
+                             /workspace/ogenti/.runtime/01_keymap_report.json   
+                    ERROR    SHAPE MISMATCHES FOUND — fix model config dims     
+                             before training                                    
