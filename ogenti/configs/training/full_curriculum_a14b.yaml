@@ -1,0 +1,261 @@
+# Full curriculum (A14B): single-config, single-process drive of the
+# complete retrofit ladder defined across RFC-0001 → RFC-0005.
+#
+# Phases (in order):
+#   1. Entity + Glyph init             — RFC-0001 IAHA + DGB warm-start
+#   2. Subject motion + Anatomy unlock — RFC-0001 ACP + RFC-0003 §4.1
+#   3. OCR/glyph hardening             — RFC-0001 §3.2 supervised tightening
+#   4. Realism (AI-tell killer)        — RFC-0003 SDRH + freq/temporal,
+#                                         RFC-0004 4-RE2 bundle (material/
+#                                         motion blur/film grain/lens/μ-events)
+#   5. Physics rails                   — RFC-0005 hard keyframe conditioning
+#
+# Top-level fields are shared defaults. Each phase under `phases:` overrides
+# the fields that change for that stage (optim.lr, scheduler.total_steps,
+# loss_weights, retrofit.unfreeze_modules, logging.run_dir).
+#
+# Driver: `scripts/train/run_curriculum.py` (a.k.a. `ogenti curriculum ...`).
+# For each phase the driver materializes a flat per-phase training YAML by
+# deep-merging (curriculum_defaults ← phase_override), then calls the same
+# `run_training()` that single-stage configs use. Final checkpoint of phase
+# N is fed as `init_ckpt` to phase N+1.
+#
+# Budget on a single A100-80GB (Wan2.2-T2V-A14B low_noise expert, batch=1
+# grad_accum=4, bf16, 480x832x81): step time ~7-9 s. Curriculum total ~4800
+# steps ≈ 10-12 h training, leaving ~2-3 h for data build + Wan2.2 download
+# + import + before/after generation + ffmpeg comparison inside the 15 h
+# pod window.
+
+stage_name: full_curriculum_a14b
+seed: 42
+
+# ── Shared dataset (full preprocessing — every load_* on) ─────────────────
+dataset:
+  _target_: ogenti.data.loaders.video_dataset.VideoDatasetConfig
+  manifest_path: data/manifests/ads_train.jsonl
+  root: data/
+  target_frames: 81
+  target_height: 480
+  target_width: 832
+  target_fps: 24
+  load_keypoints: true
+  load_glyph_regions: true
+  load_skin_masks: true
+  load_camera_motion: true
+  load_subject_motion: true
+  load_material_masks: true
+  load_object_trajectories: true
+  load_micro_events: true
+  load_physics_scenes: false   # phase 5 swaps in ads_train.presim.jsonl
+  max_glyph_regions: 16
+  glyph_crop_size: 128
+
+dataloader:
+  batch_size: 1
+  num_workers: 4
+  pin_memory: true
+  prefetch_factor: 2
+  gradient_accumulation_steps: 4
+
+flow:
+  shift: 7.0
+  logit_mean: 0.0
+  logit_std: 1.0
+
+backbone:
+  family: wan22
+  model_id: Wan-AI/Wan2.2-T2V-A14B
+  expert: low_noise
+
+precision:
+  dtype: bfloat16
+  grad_scaler: false
+  gradient_checkpointing: true
+
+logging:
+  wandb_project: ogenti-curriculum
+  log_every: 25
+  ckpt_every: 250
+  sample_every: 500
+  num_sample_videos: 1
+
+# ── Defaults inherited by all phases ──────────────────────────────────────
+optim:
+  optimizer: adamw
+  lr: 1.0e-5
+  betas: [0.9, 0.95]
+  weight_decay: 0.01
+  grad_clip: 1.0
+
+scheduler:
+  type: cosine
+  warmup_steps: 100
+  total_steps: 1000          # overridden per-phase
+  min_lr: 1.0e-7
+
+loss_weights:
+  diffusion: 1.0
+  identity: 0.05
+  anatomy: 0.0
+  ocr: 0.0
+  frequency_skin: 0.0
+  temporal_realism: 0.0
+  physics: 0.0
+  motion_realism: 0.0
+  physics_keyframe: 0.0
+
+retrofit:
+  freeze_backbone_weights: true
+  unfreeze_modules: []         # overridden per-phase
+
+# ── Curriculum (ordered) ──────────────────────────────────────────────────
+phases:
+
+  - name: phase1_entity_init
+    description: |
+      RFC-0001 warm-start: IAHA entity bank + DGB glyph branch + CMT camera
+      motion embed unlocked. Diffusion + identity loss only. At step 0 the
+      retrofit invariant holds — output is bit-equivalent to vanilla Wan2.2.
+    scheduler:
+      total_steps: 1000
+      warmup_steps: 100
+    optim:
+      lr: 1.0e-5
+    loss_weights:
+      diffusion: 1.0
+      identity: 0.1
+    retrofit:
+      unfreeze_modules:
+        - "entity_bank"
+        - "blocks.*.entity_refine"
+        - "blocks.*.patch_from_entity"
+        - "blocks.*.glyph_fuse"
+        - "glyph_branch"
+        - "camera_motion_embed"
+
+  - name: phase2_subject_motion_anatomy
+    description: |
+      RFC-0001 §3.3 ACP unlock + RFC-0003 §4.1 subject motion. Anatomy loss
+      (keypoint reconstruction) ramps in; subject_motion_embed receives its
+      first gradient signal. Identity loss tapered.
+    scheduler:
+      total_steps: 800
+      warmup_steps: 80
+    optim:
+      lr: 8.0e-6
+    loss_weights:
+      diffusion: 1.0
+      identity: 0.08
+      anatomy: 0.3
+    retrofit:
+      unfreeze_modules:
+        - "entity_bank"
+        - "blocks.*.entity_refine"
+        - "blocks.*.patch_from_entity"
+        - "blocks.*.glyph_fuse"
+        - "glyph_branch"
+        - "camera_motion_embed"
+        - "subject_motion_embed"
+
+  - name: phase3_ocr_hardening
+    description: |
+      RFC-0001 §3.2 DGB tightening. Glyph head supervised by extracted OCR
+      regions; anatomy maintained. Lower LR — we are fine-tuning glyph
+      fusion gates, not learning new structures.
+    scheduler:
+      total_steps: 700
+      warmup_steps: 70
+    optim:
+      lr: 6.0e-6
+    loss_weights:
+      diffusion: 1.0
+      identity: 0.05
+      anatomy: 0.3
+      ocr: 0.2
+    retrofit:
+      unfreeze_modules:
+        - "entity_bank"
+        - "blocks.*.entity_refine"
+        - "blocks.*.patch_from_entity"
+        - "blocks.*.glyph_fuse"
+        - "glyph_branch"
+        - "camera_motion_embed"
+        - "subject_motion_embed"
+
+  - name: phase4_realism
+    description: |
+      RFC-0003 + RFC-0004 4-RE2 bundle — the AI-tell killer. Unlocks SDRH
+      (skin), UMDH (material), motion_blur/film_grain/lens artifact heads,
+      micro_event_embed. Frequency-skin loss + temporal realism loss
+      activate. Most heavily-weighted phase.
+    scheduler:
+      total_steps: 1500
+      warmup_steps: 150
+    optim:
+      lr: 5.0e-6
+    loss_weights:
+      diffusion: 1.0
+      identity: 0.05
+      anatomy: 0.3
+      ocr: 0.2
+      frequency_skin: 0.4
+      temporal_realism: 0.3
+      motion_realism: 0.3
+    retrofit:
+      unfreeze_modules:
+        - "entity_bank"
+        - "blocks.*.entity_refine"
+        - "blocks.*.patch_from_entity"
+        - "blocks.*.glyph_fuse"
+        - "glyph_branch"
+        - "camera_motion_embed"
+        - "subject_motion_embed"
+        - "micro_event_embed"
+        - "skin_detail_head"
+        - "material_detail_head"
+        - "motion_blur_head"
+        - "film_grain_head"
+        - "lens_artifact_head"
+
+  - name: phase5_physics
+    description: |
+      RFC-0005 physics rails. PhysicsKeyframeEmbed unlocked; hard keyframe
+      loss against simulator trajectories. Soft physics + motion realism
+      retained as backups. If pre-sim data is unavailable for a clip the
+      physics_keyframe loss path is skipped per-sample (degrades to soft
+      physics), so this phase is safe to run even on a manifest with sparse
+      SceneSpec coverage.
+    dataset:
+      manifest_path: data/manifests/ads_train.presim.jsonl
+      load_physics_scenes: true
+    scheduler:
+      total_steps: 800
+      warmup_steps: 80
+    optim:
+      lr: 3.0e-6
+    loss_weights:
+      diffusion: 1.0
+      identity: 0.05
+      anatomy: 0.3
+      ocr: 0.2
+      frequency_skin: 0.4
+      temporal_realism: 0.3
+      physics: 0.1
+      motion_realism: 0.3
+      physics_keyframe: 0.6
+    retrofit:
+      unfreeze_modules:
+        - "entity_bank"
+        - "blocks.*.entity_refine"
+        - "blocks.*.patch_from_entity"
+        - "blocks.*.glyph_fuse"
+        - "glyph_branch"
+        - "camera_motion_embed"
+        - "subject_motion_embed"
+        - "micro_event_embed"
+        - "physics_keyframe_embed"
+        - "skin_detail_head"
+        - "material_detail_head"
+        - "motion_blur_head"
+        - "film_grain_head"
+        - "lens_artifact_head"

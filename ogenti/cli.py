@@ -79,6 +79,46 @@ def train(
 
 
 @app.command()
+def curriculum(
+    curriculum_config: Path = typer.Argument(
+        ...,
+        help="Path to a multi-phase curriculum YAML (see "
+             "ogenti/configs/training/full_curriculum_a14b.yaml).",
+    ),
+    model_config: Path = typer.Option(
+        "ogenti/configs/model/ogenti_a14b.yaml", "--model-config",
+    ),
+    init_ckpt: Optional[Path] = typer.Option(
+        None, "--init-from",
+        help="Checkpoint to seed phase 1 (typically the Wan2.2 retrofit init).",
+    ),
+    only_phase: Optional[str] = typer.Option(
+        None, "--only-phase",
+        help="Run a single named phase from the curriculum and exit.",
+    ),
+    skip_until: Optional[str] = typer.Option(
+        None, "--skip-until",
+        help="Skip every phase up to (and excluding) the named one, then resume.",
+    ),
+    run_dir: Optional[Path] = typer.Option(
+        None, "--run-dir",
+        help="Override the curriculum run directory.",
+    ),
+) -> None:
+    """Run a full multi-phase retrofit curriculum end-to-end."""
+    from scripts.train.run_curriculum import run_curriculum
+
+    run_curriculum(
+        curriculum_config=curriculum_config,
+        model_config=model_config,
+        init_ckpt=init_ckpt,
+        only_phase=only_phase,
+        skip_until=skip_until,
+        curriculum_run_dir_override=run_dir,
+    )
+
+
+@app.command()
 def generate(
     prompt: str = typer.Argument(...),
     ckpt: Path = typer.Option(...),
