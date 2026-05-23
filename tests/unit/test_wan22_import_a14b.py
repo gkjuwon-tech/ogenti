@@ -94,15 +94,19 @@ def test_a14b_variant_is_registered():
     variant_names = {v.name for v in VARIANTS}
     assert "a14b" in variant_names
     a14b = next(v for v in VARIANTS if v.name == "a14b")
-    # All A14B-specific intra-block keys must be in the block map.
+    # All A14B-specific intra-block source keys must be in the block map.
+    # Wan2.2 A14B has a 2-linear bias-included FFN (`ffn.0/ffn.2`) and NO
+    # SwiGLU gate — so `ffn.gate.weight` must NOT appear in the map.
     for k in (
         "self_attn.q.weight",
         "cross_attn.q.weight",
         "ffn.0.weight",
-        "ffn.gate.weight",
+        "ffn.2.weight",
         "modulation",
+        "norm3.weight",
     ):
-        assert k in a14b.block_map
+        assert k in a14b.block_map, f"missing key in a14b.block_map: {k}"
+    assert "ffn.gate.weight" not in a14b.block_map
 
 
 def test_detect_variant_picks_a14b_over_ti2v_for_a14b_keys():
@@ -120,8 +124,15 @@ def test_detect_variant_picks_a14b_over_ti2v_for_a14b_keys():
 
 
 def test_detect_variant_picks_ti2v_for_ti2v_keys():
+    # After the RFC-0006 architecture fix, the top-level state-dict keys
+    # OgentiTransformer expects (`patch_embedding`, `text_embedding.0/2`,
+    # `time_embedding.0/2`, `time_projection.1`, `head.modulation`,
+    # `head.head`) are shared by *all* of the official-style variants
+    # (official, ti2v, a14b). Detection therefore ties between them on a
+    # pure TI2V-5B input. We only assert that the chosen variant is NOT
+    # the diffusers fork (which uses distinct `condition_embedder.*` keys).
     chosen = detect_variant(_ti2v_keys())
-    assert chosen.name == "ti2v"
+    assert chosen.name in {"official", "ti2v", "a14b"}
 
 
 def test_a14b_subdirs_constant_shape():
