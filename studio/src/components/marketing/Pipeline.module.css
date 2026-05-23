@@ -77,11 +77,10 @@
 
 .tick {
   display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--accent-500);
-  box-shadow: 0 0 0 4px rgba(58, 100, 255, 0.16);
+  width: 18px;
+  height: 1px;
+  background: var(--surface-page);
+  opacity: 0.6;
 }
 
 .detail {

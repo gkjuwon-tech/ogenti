@@ -21,16 +21,12 @@ export function Pricing() {
 
         <div className={styles.grid}>
           {PLANS.map((plan) => (
-            <article
-              key={plan.id}
-              className={styles.card}
-              data-highlight={plan.highlight ? "true" : undefined}
-            >
+            <article key={plan.id} className={styles.card}>
               <header className={styles.cardHead}>
+                <span className={`mono ${styles.planIndex}`}>
+                  {String(PLANS.indexOf(plan) + 1).padStart(2, "0")}
+                </span>
                 <h3 className={styles.planName}>{plan.name}</h3>
-                {plan.highlight && (
-                  <span className={styles.badge}>Most popular</span>
-                )}
               </header>
               <p className={styles.planTagline}>{plan.tagline}</p>
 
@@ -80,21 +76,9 @@ export function Pricing() {
               <ul className={styles.features}>
                 {plan.features.map((f) => (
                   <li key={f}>
-                    <svg
-                      viewBox="0 0 16 16"
-                      width="14"
-                      height="14"
-                      aria-hidden
-                      className={styles.tick}
-                    >
-                      <path
-                        d="M3.5 8.5 L7 12 L13 5"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.6"
-                        strokeLinecap="square"
-                      />
-                    </svg>
+                    <span aria-hidden className={styles.tick}>
+                      &mdash;
+                    </span>
                     <span>{f}</span>
                   </li>
                 ))}
@@ -102,7 +86,7 @@ export function Pricing() {
 
               <ButtonLink
                 href={plan.cta.href}
-                variant={plan.highlight ? "primary" : "secondary"}
+                variant="secondary"
                 size="md"
                 className={styles.cta}
               >

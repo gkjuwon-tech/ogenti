@@ -58,7 +58,6 @@ export const PLANS: Plan[] = [
       "Slack-based support, 1-business-day SLA",
       "Audit log export",
     ],
-    highlight: true,
     cta: { label: "Start with Studio", href: "/signup?plan=studio" },
   },
   {

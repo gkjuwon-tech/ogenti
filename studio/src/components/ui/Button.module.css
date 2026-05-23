@@ -3,7 +3,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border-radius: var(--r-4);
+  border-radius: var(--r-2);
   font-family: var(--font-sans);
   font-weight: var(--fw-medium);
   letter-spacing: -0.005em;
