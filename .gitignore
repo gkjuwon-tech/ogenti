@@ -5,11 +5,12 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 
-# weights, datasets, outputs
-checkpoints/
-outputs/
-third_party/
-data/
+# weights, datasets, outputs (anchored at repo root so `ogenti/data/` and
+# `scripts/data/` source modules stay tracked)
+/checkpoints/
+/outputs/
+/third_party/
+/data/
 *.safetensors
 *.pt
 *.bin
