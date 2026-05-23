@@ -6,114 +6,104 @@ export function Hero() {
     <section className={styles.root}>
       <div className={`container ${styles.inner}`}>
         <div className={styles.copy}>
-          <p className={`eyebrow ${styles.eyebrow}`}>
-            <span className={styles.dot} aria-hidden />
-            Now in private beta · Apply for early access
+          <p className={`mono ${styles.dateline}`}>
+            <span>OG&middot;001</span>
+            <span aria-hidden>·</span>
+            <span>Private beta &mdash; Q2 cohort</span>
           </p>
 
           <h1 className={styles.title}>
-            Advertising-grade AI video.
-            <br />
-            <span className={styles.titleAccent}>Without the AI tells.</span>
+            A video model built for the people who get fired when the wordmark
+            is wrong.
           </h1>
 
           <p className={styles.lede}>
-            Ogenti is a structurally retrofit video foundation model built for
-            brands and agencies. Type-safe glyphs, anatomy-locked humans,
-            physically grounded motion — every output passes the&nbsp;
-            <em>is&#8209;this&#8209;AI?</em> sniff test that kills today&apos;s
-            generative pipelines.
+            Ogenti is a structural retrofit of a 14&#8209;billion-parameter
+            video diffusion transformer. We replaced the parts that fail in
+            front of a producer &mdash; glyphs, anatomy, and Newtonian motion
+            &mdash; without disturbing the parts that already work. The
+            result is footage that survives the room where the cut is
+            reviewed.
           </p>
 
           <div className={styles.ctaRow}>
             <ButtonLink href="/signup" size="lg" variant="primary">
               Request access
             </ButtonLink>
-            <ButtonLink href="/docs/brief" size="lg" variant="secondary">
+            <ButtonLink href="/docs/brief" size="lg" variant="link">
               Read the technical brief
-              <span aria-hidden> →</span>
             </ButtonLink>
           </div>
-
-          <ul className={styles.bullets}>
-            <li>
-              <span className={styles.bulletLabel}>OCR-stable</span>
-              <span className={styles.bulletValue}>brand glyph branch</span>
-            </li>
-            <li>
-              <span className={styles.bulletLabel}>Anatomy-aware</span>
-              <span className={styles.bulletValue}>21k human-keyframe prior</span>
-            </li>
-            <li>
-              <span className={styles.bulletLabel}>Physics-conditioned</span>
-              <span className={styles.bulletValue}>PyBullet pre-simulation</span>
-            </li>
-          </ul>
         </div>
 
-        <aside className={styles.viewer} aria-label="Example output (placeholder)">
-          <div className={styles.viewerInner}>
-            <div className={styles.viewerTopBar}>
-              <span className={styles.viewerDot} data-tone="red" />
-              <span className={styles.viewerDot} data-tone="yellow" />
-              <span className={styles.viewerDot} data-tone="green" />
-              <span className={`mono ${styles.viewerTitle}`}>
-                studio.ogenti.com / preview
-              </span>
-            </div>
-            <div className={styles.viewerStage}>
-              <div className={styles.gradientFrame} aria-hidden />
-              <div className={styles.frameOverlay}>
-                <span className={`eyebrow ${styles.frameLabel}`}>brief</span>
-                <p className={styles.framePrompt}>
-                  &ldquo;Slow push-in on a perfume bottle on warm marble, glass
-                  refracts soft window light, label reads&nbsp;
-                  <span className={`mono ${styles.glyph}`}>AURELIA Nº7</span>&nbsp;
-                  in clean serif, 4&nbsp;sec, 24&nbsp;fps.&rdquo;
-                </p>
-              </div>
-              <dl className={styles.frameMeta}>
-                <div>
-                  <dt>glyph integrity</dt>
-                  <dd className="mono">0.987</dd>
-                </div>
-                <div>
-                  <dt>anatomy score</dt>
-                  <dd className="mono">n/a</dd>
-                </div>
-                <div>
-                  <dt>physics fit</dt>
-                  <dd className="mono">0.962</dd>
-                </div>
-                <div>
-                  <dt>render time</dt>
-                  <dd className="mono">38.4s</dd>
-                </div>
-              </dl>
-            </div>
+        <aside className={styles.spec} aria-label="Model specification">
+          <div className={styles.specHead}>
+            <span className={`mono ${styles.specHeadKey}`}>Model</span>
+            <span className={`mono ${styles.specHeadValue}`}>
+              Ogenti&nbsp;v0.6 &middot; Wan&nbsp;2.2 retrofit (A14B&nbsp;MoE)
+            </span>
           </div>
+
+          <dl className={styles.specList}>
+            <div className={styles.specRow}>
+              <dt>Backbone</dt>
+              <dd>14 B parameter video DiT (MoE high&#8209;noise / low&#8209;noise experts)</dd>
+            </div>
+            <div className={styles.specRow}>
+              <dt>Resolution</dt>
+              <dd>up to 4 K, 24 fps</dd>
+            </div>
+            <div className={styles.specRow}>
+              <dt>Clip length</dt>
+              <dd>2 &ndash; 20 sec, deterministic seed</dd>
+            </div>
+            <div className={styles.specRow}>
+              <dt>Aspect ratios</dt>
+              <dd>16 : 9 &middot; 9 : 16 &middot; 1 : 1 &middot; 4 : 5</dd>
+            </div>
+            <div className={styles.specRow}>
+              <dt>Retrofit ladder</dt>
+              <dd>five phases &middot; 4 800 step total &middot; zero-init gates</dd>
+            </div>
+            <div className={styles.specRow}>
+              <dt>Conditioners</dt>
+              <dd>brand glyphs &middot; anatomy keypoints &middot; PyBullet physics</dd>
+            </div>
+            <div className={styles.specRow}>
+              <dt>Step 0 invariant</dt>
+              <dd>bit&#8209;equivalent to vanilla Wan 2.2</dd>
+            </div>
+            <div className={styles.specRow}>
+              <dt>Method</dt>
+              <dd>
+                published as <span className="mono">RFC&nbsp;0001 &mdash; 0006</span>
+              </dd>
+            </div>
+          </dl>
         </aside>
       </div>
 
       <div className={`container ${styles.logoRow}`}>
-        <p className={styles.logoLabel}>
-          Built on research published as RFC&nbsp;0001 — RFC&nbsp;0006. Trusted
-          by independents and Fortune&nbsp;500 brand teams in closed pilot.
-        </p>
-        <ul className={styles.logoStrip}>
-          {[
-            "monolith",
-            "concentric",
-            "axiom",
-            "pylon",
-            "harbour & co",
-            "northscale",
-          ].map((name) => (
-            <li key={name} className={styles.logo}>
-              {name}
-            </li>
-          ))}
-        </ul>
+        <dl className={styles.pilot}>
+          <div className={styles.pilotRow}>
+            <dt className={`mono ${styles.pilotKey}`}>Pilot</dt>
+            <dd className={styles.pilotValue}>
+              Closed cohort. Brand and agency teams under NDA.
+            </dd>
+          </div>
+          <div className={styles.pilotRow}>
+            <dt className={`mono ${styles.pilotKey}`}>Cities</dt>
+            <dd className={`mono ${styles.pilotValue}`}>
+              Seoul &middot; Tokyo &middot; New&nbsp;York &middot; London
+            </dd>
+          </div>
+          <div className={styles.pilotRow}>
+            <dt className={`mono ${styles.pilotKey}`}>Window</dt>
+            <dd className={`mono ${styles.pilotValue}`}>
+              Q2 &mdash; rolling intake, weekly
+            </dd>
+          </div>
+        </dl>
       </div>
     </section>
   );

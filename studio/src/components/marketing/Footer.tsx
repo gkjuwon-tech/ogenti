@@ -62,7 +62,8 @@ export function Footer() {
         <div className={styles.brandCol}>
           <Wordmark />
           <p className={styles.tagline}>
-            Advertising-grade AI video for teams that ship for a living.
+            Video diffusion, retrofitted for the room where the cut is
+            reviewed.
           </p>
           <p className={styles.meta}>
             <span>Built in Seoul.</span>
