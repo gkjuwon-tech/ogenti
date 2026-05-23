@@ -277,23 +277,49 @@ class KeymapVariant:
         )
 
 
+# Order matters for ties in `detect_variant`. We list `a14b` first so that when
+# the per-block source key set is *identical* between ti2v and a14b (which is
+# the case after the RFC-0006 refactor — both describe the Wan2.2-T2V family
+# with cross_attn + norm3 + per-channel q/k-norm), `a14b` wins the tie. The
+# retrofit pipeline cares because downstream code uses `report["variant"]` to
+# decide MoE-related behavior.
 VARIANTS = [
+    KeymapVariant.a14b(),
+    KeymapVariant.ti2v(),
     KeymapVariant.official(),
     KeymapVariant.diffusers(),
-    KeymapVariant.ti2v(),
-    KeymapVariant.a14b(),
 ]
 
 
 def detect_variant(state_keys: list[str]) -> KeymapVariant:
-    """Heuristic: pick the variant whose top-level keys appear most often."""
-    scores: dict[str, int] = {}
+    """Heuristic: pick the variant whose top-level *and* per-block source keys
+    appear most often in the loaded state dict.
+
+    After the RFC-0006 architecture fix, the `official`, `ti2v` and `a14b`
+    variants share an identical top-level key set (`patch_embedding`,
+    `text_embedding.0/2`, `time_embedding.0/2`, `time_projection.1`,
+    `head.modulation`, `head.head`), so top-only scoring would tie them.
+    We disambiguate by also counting how many *block-level* source keys
+    actually appear under `blocks.0.*` — this picks `a14b` for real
+    Wan2.2-A14B snapshots which carry the full cross_attn + norm3 + per-channel
+    q/k-norm shape that the `ti2v` and `official` block_maps also describe but
+    with subtly different sets of keys.
+    """
     keyset = set(state_keys)
+    block_zero_keys = {k.removeprefix("blocks.0.") for k in keyset if k.startswith("blocks.0.")}
+
+    scores: dict[str, tuple[int, int]] = {}
     for v in VARIANTS:
-        score = sum(1 for k in v.top_map if k in keyset)
-        scores[v.name] = score
-    best = max(VARIANTS, key=lambda v: scores[v.name])
-    log.info(f"variant detection scores: {scores} -> chose '{best.name}'")
+        top_score = sum(1 for k in v.top_map if k in keyset)
+        block_score = sum(1 for k in v.block_map if k in block_zero_keys)
+        scores[v.name] = (top_score, block_score)
+
+    best = max(VARIANTS, key=lambda v: (scores[v.name][0] + scores[v.name][1]))
+    log.info(
+        "variant detection scores (top, block): "
+        + ", ".join(f"{n}={s}" for n, s in scores.items())
+        + f" -> chose '{best.name}'"
+    )
     return best
 
 
