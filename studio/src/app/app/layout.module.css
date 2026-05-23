@@ -1,0 +1,23 @@
+.root {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  min-height: 100vh;
+  background: var(--surface-page);
+}
+
+.main {
+  min-height: 100vh;
+  padding: 32px 40px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+@media (max-width: 880px) {
+  .root {
+    grid-template-columns: 1fr;
+  }
+  .main {
+    padding: 24px;
+  }
+}

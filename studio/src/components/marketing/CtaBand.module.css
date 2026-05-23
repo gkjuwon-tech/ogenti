@@ -1,0 +1,55 @@
+.root {
+  padding: 96px 0;
+  background: var(--surface-inverse);
+  color: var(--surface-page);
+}
+
+.inner {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 48px;
+  align-items: end;
+}
+
+.copy {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.copy :global(.eyebrow) {
+  color: var(--ink-400);
+}
+
+.title {
+  font-size: var(--fs-display-m);
+  letter-spacing: var(--tracking-display);
+  line-height: var(--lh-display);
+  font-weight: var(--fw-semibold);
+  color: var(--surface-page);
+  max-width: 18ch;
+}
+
+.lede {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink-300);
+  max-width: 52ch;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
+}
+
+@media (max-width: 880px) {
+  .inner {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .title {
+    font-size: 36px;
+  }
+}

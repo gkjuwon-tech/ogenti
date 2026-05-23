@@ -1,0 +1,284 @@
+.root {
+  padding: 120px 0;
+  background: var(--surface-page);
+  border-bottom: 1px solid var(--line-100);
+}
+
+.inner {
+  display: flex;
+  flex-direction: column;
+  gap: 56px;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 760px;
+}
+
+.title {
+  font-size: var(--fs-display-m);
+  letter-spacing: var(--tracking-display);
+  line-height: var(--lh-display);
+  font-weight: var(--fw-semibold);
+}
+
+.lede {
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--ink-700);
+  max-width: 62ch;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border: 1px solid var(--line-200);
+  border-radius: var(--r-3);
+  overflow: hidden;
+  background: var(--surface-card);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 28px;
+  border-right: 1px solid var(--line-200);
+  background: var(--surface-card);
+  position: relative;
+}
+
+.card:last-child {
+  border-right: 0;
+}
+
+.card[data-highlight="true"] {
+  background: var(--ink-1000);
+  color: var(--surface-page);
+}
+
+.cardHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.planName {
+  font-size: 17px;
+  letter-spacing: -0.01em;
+  font-weight: var(--fw-semibold);
+  color: inherit;
+}
+
+.badge {
+  font-size: 10px;
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  background: rgba(250, 250, 247, 0.08);
+  color: var(--surface-page);
+  border-radius: var(--r-1);
+}
+
+.planTagline {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink-500);
+  min-height: 60px;
+}
+
+.card[data-highlight="true"] .planTagline {
+  color: var(--ink-300);
+}
+
+.priceRow {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 16px 0;
+  border-top: 1px solid var(--line-100);
+  border-bottom: 1px solid var(--line-100);
+}
+
+.card[data-highlight="true"] .priceRow {
+  border-color: var(--line-inverse);
+}
+
+.priceAmount {
+  font-size: 36px;
+  letter-spacing: -0.02em;
+  font-weight: var(--fw-semibold);
+  color: inherit;
+}
+
+.priceCustom {
+  font-size: 28px;
+  letter-spacing: -0.02em;
+  font-weight: var(--fw-semibold);
+  color: inherit;
+}
+
+.priceCadence {
+  display: flex;
+  flex-direction: column;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-500);
+}
+
+.card[data-highlight="true"] .priceCadence {
+  color: var(--ink-400);
+}
+
+.specs {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  padding: 8px 0 16px;
+}
+
+.specs > div {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+.specs dt {
+  color: var(--ink-500);
+}
+
+.card[data-highlight="true"] .specs dt {
+  color: var(--ink-400);
+}
+
+.specs dd {
+  font-size: 12px;
+  color: inherit;
+}
+
+.features {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 0;
+  border-top: 1px solid var(--line-100);
+  flex: 1;
+}
+
+.card[data-highlight="true"] .features {
+  border-color: var(--line-inverse);
+}
+
+.features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: inherit;
+}
+
+.tick {
+  color: var(--accent-600);
+  margin-top: 4px;
+  flex: 0 0 auto;
+}
+
+.card[data-highlight="true"] .tick {
+  color: var(--accent-500);
+}
+
+.cta {
+  width: 100%;
+}
+
+/* ── PAYG card ── */
+
+.payg {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 48px;
+  align-items: center;
+  padding: 32px;
+  background: var(--surface-card);
+  border: 1px solid var(--line-200);
+  border-radius: var(--r-3);
+}
+
+.paygTitle {
+  font-size: 24px;
+  margin-top: 8px;
+  letter-spacing: -0.014em;
+}
+
+.paygCopy {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink-700);
+  max-width: 56ch;
+}
+
+.paygPrice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.paygAmount {
+  font-size: 36px;
+  font-weight: var(--fw-semibold);
+  letter-spacing: -0.02em;
+}
+
+.paygUnit {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-500);
+}
+
+.paygLink {
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--accent-600);
+  border-bottom: 1px solid var(--accent-600);
+}
+
+@media (max-width: 1120px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .card:nth-child(2) {
+    border-right: 0;
+  }
+  .card:nth-child(1),
+  .card:nth-child(2) {
+    border-bottom: 1px solid var(--line-200);
+  }
+}
+
+@media (max-width: 700px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .card {
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--line-200) !important;
+  }
+  .card:last-child {
+    border-bottom: 0 !important;
+  }
+  .payg {
+    grid-template-columns: 1fr;
+  }
+  .paygPrice {
+    align-items: flex-start;
+  }
+}

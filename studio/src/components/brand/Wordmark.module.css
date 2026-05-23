@@ -1,0 +1,37 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-1000);
+  font-family: var(--font-display);
+  font-weight: var(--fw-semibold);
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  user-select: none;
+}
+
+.root[data-tone="inverse"] {
+  color: var(--surface-page);
+}
+
+.mark {
+  display: inline-flex;
+  color: var(--accent-600);
+}
+
+.root[data-tone="inverse"] .mark {
+  color: var(--accent-500);
+}
+
+.word {
+  white-space: nowrap;
+}
+
+.suffix {
+  color: var(--ink-500);
+  font-weight: var(--fw-regular);
+}
+
+.root[data-tone="inverse"] .suffix {
+  color: var(--ink-400);
+}

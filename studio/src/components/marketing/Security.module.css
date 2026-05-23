@@ -1,0 +1,74 @@
+.root {
+  padding: 120px 0;
+  background: var(--surface-page);
+  border-bottom: 1px solid var(--line-100);
+}
+
+.inner {
+  display: flex;
+  flex-direction: column;
+  gap: 56px;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 720px;
+}
+
+.title {
+  font-size: var(--fs-display-m);
+  letter-spacing: var(--tracking-display);
+  line-height: var(--lh-display);
+  font-weight: var(--fw-semibold);
+}
+
+.lede {
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--ink-700);
+  max-width: 56ch;
+}
+
+.grid {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  border-top: 1px solid var(--line-200);
+  border-left: 1px solid var(--line-200);
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 24px;
+  background: var(--surface-card);
+  border-right: 1px solid var(--line-200);
+  border-bottom: 1px solid var(--line-200);
+  min-height: 180px;
+}
+
+.cellTitle {
+  font-size: 15px;
+  font-weight: var(--fw-semibold);
+  letter-spacing: -0.008em;
+  color: var(--ink-1000);
+}
+
+.cellBody {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink-500);
+}
+
+@media (max-width: 880px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .title {
+    font-size: 36px;
+  }
+}
