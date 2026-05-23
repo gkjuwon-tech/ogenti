@@ -1,0 +1,269 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line-100);
+}
+
+.title {
+  margin-top: 8px;
+  font-size: 26px;
+  font-weight: var(--fw-semibold);
+  letter-spacing: -0.014em;
+}
+
+.subtitle {
+  margin-top: 4px;
+  max-width: 70ch;
+  font-size: 13px;
+  color: var(--ink-500);
+}
+
+.banner {
+  padding: 14px 16px;
+  border-radius: var(--r-3);
+  font-size: 13px;
+  color: var(--warning);
+  background: rgba(178, 105, 27, 0.06);
+  border: 1px solid rgba(178, 105, 27, 0.32);
+}
+
+.cycle {
+  background: var(--surface-card);
+  border: 1px solid var(--line-200);
+  border-radius: var(--r-3);
+  overflow: hidden;
+}
+
+.cycleHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  padding: 20px;
+  border-bottom: 1px solid var(--line-100);
+}
+
+.cycleRange {
+  margin-top: 4px;
+  font-size: 18px;
+  font-weight: var(--fw-semibold);
+  letter-spacing: -0.008em;
+}
+
+.cycleGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.cycleMetric {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+  border-right: 1px solid var(--line-100);
+  min-height: 132px;
+}
+
+.cycleMetric:last-child {
+  border-right: 0;
+}
+
+.metricLabel {
+  font-size: 11px;
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-500);
+}
+
+.metricValue {
+  font-size: 24px;
+  letter-spacing: -0.014em;
+  font-weight: var(--fw-semibold);
+  color: var(--ink-1000);
+}
+
+.metricSub {
+  font-size: 12px;
+  color: var(--ink-500);
+}
+
+.bar {
+  margin-top: 8px;
+  height: 4px;
+  background: var(--line-100);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.bar > span {
+  display: block;
+  height: 100%;
+  background: var(--accent-600);
+}
+
+.plans,
+.invoices {
+  background: var(--surface-card);
+  border: 1px solid var(--line-200);
+  border-radius: var(--r-3);
+  overflow: hidden;
+}
+
+.plansHead,
+.invoicesHead {
+  padding: 20px;
+  border-bottom: 1px solid var(--line-100);
+}
+
+.sectionTitle {
+  font-size: 14px;
+  font-weight: var(--fw-semibold);
+}
+
+.sectionSub {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--ink-500);
+}
+
+.planList {
+  list-style: none;
+}
+
+.planRow {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 24px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line-100);
+  align-items: center;
+}
+
+.planRow:last-child {
+  border-bottom: 0;
+}
+
+.planRow[data-current="true"] {
+  background: var(--surface-sunken);
+}
+
+.planMain {
+  min-width: 0;
+}
+
+.planName {
+  font-size: 14px;
+  font-weight: var(--fw-semibold);
+}
+
+.planTagline {
+  font-size: 12px;
+  color: var(--ink-500);
+  margin-top: 2px;
+}
+
+.planNumbers {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.planPrice {
+  font-size: 13px;
+  color: var(--ink-1000);
+}
+
+.planIncl {
+  font-size: 11px;
+  color: var(--ink-500);
+}
+
+.empty {
+  padding: 32px 20px;
+  font-size: 13px;
+  color: var(--ink-500);
+  text-align: center;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  font-size: 13px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--line-100);
+}
+
+.table th {
+  font-weight: var(--fw-medium);
+  color: var(--ink-500);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.table tr:last-child td {
+  border-bottom: 0;
+}
+
+.invStatus {
+  font-size: 10px;
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: var(--r-1);
+  background: var(--surface-sunken);
+  color: var(--ink-700);
+}
+
+.invStatus[data-status="PAID"] {
+  background: rgba(31, 122, 61, 0.1);
+  color: var(--success);
+}
+
+.invStatus[data-status="OPEN"] {
+  background: rgba(178, 105, 27, 0.1);
+  color: var(--warning);
+}
+
+.invStatus[data-status="VOID"],
+.invStatus[data-status="UNCOLLECTIBLE"] {
+  background: rgba(179, 38, 30, 0.08);
+  color: var(--danger);
+}
+
+.actions {
+  text-align: right;
+}
+
+.actionLink {
+  font-size: 13px;
+  color: var(--accent-600);
+}
+
+@media (max-width: 880px) {
+  .cycleGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .cycleMetric {
+    border-bottom: 1px solid var(--line-100);
+  }
+  .cycleMetric:nth-last-child(-n + 2) {
+    border-bottom: 0;
+  }
+  .cycleMetric:nth-child(2n) {
+    border-right: 0;
+  }
+  .planRow {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}

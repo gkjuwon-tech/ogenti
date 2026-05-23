@@ -1,0 +1,183 @@
+@import "./tokens.css";
+
+/* ──────────────────────────────────────────────────────────────────────────
+   reset (modern, opinionated)
+   ────────────────────────────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+html {
+  font-size: 16px;
+  line-height: var(--lh-body);
+  -webkit-text-size-adjust: 100%;
+  -moz-tab-size: 4;
+  tab-size: 4;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  font-weight: var(--fw-regular);
+  color: var(--ink-900);
+  background: var(--surface-page);
+  font-feature-settings: "kern", "ss01", "cv11";
+  font-variant-numeric: tabular-nums;
+  overflow-x: hidden;
+}
+
+/* Numerals use lining tabular by default for B2B legibility in dashboards.
+   Body paragraphs can override via [data-prose] if needed. */
+[data-prose] {
+  font-variant-numeric: normal;
+}
+
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+input,
+button,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  overflow-wrap: break-word;
+}
+
+/* Headlines use display family + tight tracking (Inter excels here) */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-heading);
+  line-height: var(--lh-heading);
+  color: var(--ink-1000);
+}
+
+#__next,
+#root {
+  isolation: isolate;
+}
+
+::selection {
+  background: var(--ink-1000);
+  color: var(--surface-page);
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   focus
+   ────────────────────────────────────────────────────────────────────────── */
+
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-600);
+  outline-offset: 2px;
+  border-radius: var(--r-2);
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   utility classes (sparingly used — most styling via CSS Modules)
+   ────────────────────────────────────────────────────────────────────────── */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.container {
+  width: 100%;
+  max-width: var(--container);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.container-narrow {
+  max-width: var(--container-narrow);
+}
+
+.container-wide {
+  max-width: var(--container-wide);
+}
+
+/* eyebrow text (small uppercase label above section headings) */
+.eyebrow {
+  display: inline-block;
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--ink-500);
+}
+
+/* mono numeric (pricing tables, usage dashboards) */
+.mono {
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum", "zero";
+  font-variant-numeric: tabular-nums;
+}
+
+/* Plain prose links inside marketing copy */
+.link {
+  color: var(--accent-600);
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--t-fast) var(--easing-standard);
+}
+.link:hover {
+  border-bottom-color: var(--accent-600);
+}

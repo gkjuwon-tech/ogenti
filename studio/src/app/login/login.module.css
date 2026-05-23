@@ -1,0 +1,155 @@
+.root {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  background:
+    linear-gradient(180deg, rgba(30, 77, 255, 0.04), transparent 200px),
+    var(--surface-page);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 32px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+}
+
+.altPrompt {
+  font-size: 13px;
+  color: var(--ink-500);
+}
+
+.altPrompt a {
+  color: var(--ink-900);
+  text-decoration: underline;
+  text-decoration-color: var(--line-300);
+  text-underline-offset: 3px;
+  transition: text-decoration-color var(--t-fast) var(--easing-standard);
+}
+
+.altPrompt a:hover {
+  text-decoration-color: var(--ink-900);
+}
+
+.card {
+  width: 100%;
+  max-width: 440px;
+  justify-self: center;
+  align-self: center;
+  margin: 0 24px 80px;
+  padding: 40px;
+  background: var(--surface-card);
+  border: 1px solid var(--line-200);
+  border-radius: var(--r-3);
+  box-shadow: var(--shadow-pop);
+}
+
+.title {
+  font-size: 26px;
+  font-weight: var(--fw-semibold);
+  letter-spacing: -0.014em;
+}
+
+.subtitle {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-500);
+}
+
+.errorBanner {
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: rgba(179, 38, 30, 0.08);
+  border: 1px solid rgba(179, 38, 30, 0.24);
+  border-radius: var(--r-2);
+  color: var(--danger);
+  font-size: 13px;
+}
+
+.form {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field > span {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-500);
+}
+
+.input {
+  height: 42px;
+  padding: 0 12px;
+  background: var(--surface-card);
+  border: 1px solid var(--line-200);
+  border-radius: var(--r-2);
+  font-size: 15px;
+  color: var(--ink-1000);
+  transition: border-color var(--t-fast) var(--easing-standard);
+}
+
+.input::placeholder {
+  color: var(--ink-300);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--accent-600);
+  box-shadow: 0 0 0 3px rgba(30, 77, 255, 0.12);
+}
+
+.info {
+  margin-top: 8px;
+  padding: 12px 14px;
+  background: rgba(31, 122, 61, 0.06);
+  border: 1px solid rgba(31, 122, 61, 0.24);
+  border-radius: var(--r-2);
+  color: var(--success);
+  font-size: 13px;
+}
+
+.error {
+  margin-top: 8px;
+  padding: 12px 14px;
+  background: rgba(179, 38, 30, 0.06);
+  border: 1px solid rgba(179, 38, 30, 0.24);
+  border-radius: var(--r-2);
+  color: var(--danger);
+  font-size: 13px;
+}
+
+.fineprint {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line-100);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ink-500);
+}
+
+.fineprint a {
+  color: var(--ink-700);
+  text-decoration: underline;
+  text-decoration-color: var(--line-300);
+  text-underline-offset: 3px;
+}
+
+.fineprint a:hover {
+  color: var(--ink-1000);
+  text-decoration-color: var(--ink-700);
+}

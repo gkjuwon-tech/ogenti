@@ -1,0 +1,241 @@
+// Ogenti Studio — Prisma schema
+//
+// Multi-tenant model. Users belong to one or more Organizations via Membership.
+// Subscription, billing customer, and usage are all org-scoped, never user-
+// scoped, because B2B contracts are signed with companies, not individuals.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Auth (NextAuth-compatible)
+// ─────────────────────────────────────────────────────────────────────────
+
+model User {
+  id            String       @id @default(cuid())
+  email         String       @unique
+  name          String?
+  image         String?
+  emailVerified DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  memberships   Membership[]
+  sessions      Session[]
+  accounts      Account[]
+  apiKeys       ApiKey[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Tenancy
+// ─────────────────────────────────────────────────────────────────────────
+
+// SQLite lacks enum support in Prisma. Use string fields backed by the
+// TypeScript string-union types in `src/lib/types.ts`. Switching the
+// provider to Postgres later can re-introduce native enums without a
+// schema rewrite.
+//
+//   PlanTier            = 'STARTER' | 'STUDIO' | 'AGENCY' | 'ENTERPRISE' | 'PAYG'
+//   SubscriptionStatus  = 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'INCOMPLETE' | 'PAUSED'
+//   MembershipRole      = 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER'
+
+model Organization {
+  id              String       @id @default(cuid())
+  slug            String       @unique
+  name            String
+  legalName       String?
+  billingEmail    String?
+
+  // Stripe linkage. All org-level by design.
+  stripeCustomerId      String? @unique
+  stripeSubscriptionId  String? @unique
+  stripeMeterItemId     String?       // metered subscription item id for PAYG/overage
+  subscriptionStatus    String  @default("TRIALING")
+  planTier              String  @default("PAYG")
+
+  // current billing period (mirrored from Stripe webhook for convenience)
+  currentPeriodStart    DateTime?
+  currentPeriodEnd      DateTime?
+
+  // operational flags
+  generationPaused      Boolean  @default(false)   // tripped by payment_failed
+  trialEndsAt           DateTime?
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  memberships     Membership[]
+  generations     Generation[]
+  usageEvents     UsageEvent[]
+  invoices        Invoice[]
+  apiKeys         ApiKey[]
+}
+
+model Membership {
+  id             String         @id @default(cuid())
+  userId         String
+  organizationId String
+  role           String   @default("MEMBER")
+  createdAt      DateTime       @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Generation jobs (the actual product)
+// ─────────────────────────────────────────────────────────────────────────
+
+//   GenerationStatus = 'QUEUED' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'CANCELED'
+model Generation {
+  id              String           @id @default(cuid())
+  organizationId  String
+  createdByUserId String?
+
+  prompt          String
+  negativePrompt  String?
+  aspectRatio     String   @default("16:9")
+  durationSeconds Int      @default(4)
+  resolution      String   @default("1080p")  // 720p | 1080p | 4k
+  seed            Int?
+  referenceUrl    String?       // optional reference image
+  modelVersion    String   @default("ogenti-a14b-retrofit")
+
+  status          String   @default("QUEUED")
+  jobToken        String   @unique                  // external job id from the inference server
+  resultUrl       String?  // mp4 location once finished
+  thumbnailUrl    String?
+  errorMessage    String?
+
+  // analytics / billing input
+  computeSeconds  Int?    // GPU-seconds actually consumed (for cost analysis, not for billing)
+  billedSeconds   Int?    // seconds we charged for (== durationSeconds if successful)
+
+  createdAt       DateTime @default(now())
+  startedAt       DateTime?
+  finishedAt      DateTime?
+
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  usageEvent      UsageEvent?
+
+  @@index([organizationId, createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Usage events (the metered-billing log)
+// ─────────────────────────────────────────────────────────────────────────
+
+model UsageEvent {
+  id              String   @id @default(cuid())
+  organizationId  String
+  generationId    String?  @unique
+  idempotencyKey  String   @unique     // stable across retries; <= 200 chars
+  billedSeconds   Int
+  ratePerSecondCents Int   // captured at event time; never re-derived
+  costCents       Int      // billedSeconds * ratePerSecondCents
+  description     String?
+
+  // sync state with Stripe
+  reportedToStripeAt DateTime?
+  stripeUsageRecordId String?
+
+  createdAt       DateTime @default(now())
+
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  generation      Generation?  @relation(fields: [generationId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Invoices (mirrored from Stripe so we can show history without round-trip)
+// ─────────────────────────────────────────────────────────────────────────
+
+//   InvoiceStatus = 'DRAFT' | 'OPEN' | 'PAID' | 'VOID' | 'UNCOLLECTIBLE'
+model Invoice {
+  id               String        @id @default(cuid())
+  organizationId   String
+  stripeInvoiceId  String        @unique
+  number           String?
+  status           String        @default("DRAFT")
+  amountDueCents   Int
+  amountPaidCents  Int           @default(0)
+  currency         String        @default("usd")
+  hostedInvoiceUrl String?
+  pdfUrl           String?
+  periodStart      DateTime
+  periodEnd        DateTime
+  createdAt        DateTime      @default(now())
+  paidAt           DateTime?
+
+  organization     Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// API keys (for platforms / pay-as-you-go API customers)
+// ─────────────────────────────────────────────────────────────────────────
+
+model ApiKey {
+  id              String        @id @default(cuid())
+  organizationId  String
+  createdByUserId String
+
+  label           String
+  prefix          String        // first 8 chars, shown in UI
+  hashedKey       String        @unique
+  lastUsedAt      DateTime?
+  revokedAt       DateTime?
+
+  createdAt       DateTime      @default(now())
+
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user            User          @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
